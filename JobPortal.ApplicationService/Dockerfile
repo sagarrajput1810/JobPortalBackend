@@ -5,10 +5,10 @@ EXPOSE 8080
 FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 ARG BUILD_CONFIGURATION=Release
 WORKDIR /src
-COPY ["JobPortal.ApplicationService.csproj", "."]
-RUN dotnet restore "./JobPortal.ApplicationService.csproj"
+COPY ["JobPortal.ApplicationService/JobPortal.ApplicationService.csproj", "JobPortal.ApplicationService/"]
+RUN dotnet restore "JobPortal.ApplicationService/JobPortal.ApplicationService.csproj"
 COPY . .
-WORKDIR "/src/."
+WORKDIR "/src/JobPortal.ApplicationService"
 RUN dotnet build "JobPortal.ApplicationService.csproj" -c $BUILD_CONFIGURATION -o /app/build
 
 FROM build AS publish
