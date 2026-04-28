@@ -1,0 +1,9 @@
+services:
+  notification-service:
+    build: .
+    container_name: notification-standalone
+    ports:
+      - "5295:8080"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ServiceBus__ConnectionString=YOUR_SERVICE_BUS_CONNECTION_STRING

@@ -1,0 +1,10 @@
+services:
+  profile-service:
+    build: .
+    container_name: profile-standalone
+    ports:
+      - "5129:8080"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ConnectionStrings__DefaultConnection=YOUR_DATABASE_CONNECTION_STRING
+      - ServiceBus__ConnectionString=YOUR_SERVICE_BUS_CONNECTION_STRING

@@ -1,0 +1,13 @@
+services:
+  ai-resume-parser-service:
+    build: .
+    container_name: ai-resume-parser-standalone
+    ports:
+      - "5241:8080"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - RabbitMq__Host=host.docker.internal
+      - ServiceBus__ConnectionString=YOUR_SERVICE_BUS_CONNECTION_STRING
+      - ServiceUrls__ApplicationService=http://host.docker.internal:5243
+    extra_hosts:
+      - "host.docker.internal:host-gateway"

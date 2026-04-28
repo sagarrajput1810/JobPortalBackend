@@ -1,0 +1,12 @@
+services:
+  application-service:
+    build: .
+    container_name: application-standalone
+    ports:
+      - "5243:8080"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ConnectionStrings__DefaultConnection=YOUR_DATABASE_CONNECTION_STRING
+      - ServiceBus__ConnectionString=YOUR_SERVICE_BUS_CONNECTION_STRING
+      - AzureStorage__ConnectionString=YOUR_STORAGE_CONNECTION_STRING
+      - AzureStorage__ContainerName=resumes

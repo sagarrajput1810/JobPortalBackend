@@ -1,0 +1,8 @@
+services:
+  gateway-service:
+    build: .
+    container_name: gateway-standalone
+    ports:
+      - "5046:8080"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development

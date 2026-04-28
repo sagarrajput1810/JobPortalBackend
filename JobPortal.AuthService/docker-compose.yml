@@ -1,0 +1,10 @@
+services:
+  auth-service:
+    build: .
+    container_name: auth-standalone
+    ports:
+      - "5063:8080"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ConnectionStrings__DefaultConnection=${AUTH_DB_CONNECTION_STRING}
+      - ServiceBus__ConnectionString=${SERVICE_BUS_CONNECTION_STRING}

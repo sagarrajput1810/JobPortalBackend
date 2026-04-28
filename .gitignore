@@ -1,0 +1,11 @@
+# Sensitive files
+.env
+*.env
+**/appsettings.Development.json
+**/appsettings.json
+**/.usersecrets
+**/.dockerignore
+**/bin/
+**/Properties/
+**/obj/
+**/Migrations/
