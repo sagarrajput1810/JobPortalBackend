@@ -24,14 +24,10 @@ public class AuthController : ControllerBase
     {
         if (request == null) return BadRequest("Invalid request.");
 
-        // Yahan hum explicitly "Candidate" bhej rahe hain
         var success = await _authService.RegisterAsync(request, "Candidate");
         if (!success) return BadRequest("Registration failed. Email might already exist.");
 
-        Console.WriteLine($"Publishing UserRegisteredEvent for {request.Email}");
-        await _publishEndpoint.Publish(new UserRegisteredEvent(request.Email, "Candidate"));
-
-        return Ok("Candidate registered successfully!");
+        return Ok("Candidate registered successfully! Please check your email for OTP.");
     }
 
     [HttpPost("register/recruiter")]
@@ -39,21 +35,43 @@ public class AuthController : ControllerBase
     {
         if (request == null) return BadRequest("Invalid request.");
 
-        // Yahan hum explicitly "Recruiter" bhej rahe hain
         var success = await _authService.RegisterAsync(request, "Recruiter");
         if (!success) return BadRequest("Registration failed. Email might already exist.");
 
-        await _publishEndpoint.Publish(new UserRegisteredEvent(request.Email, "Recruiter"));
+        return Ok("Recruiter registered successfully! Please check your email for OTP.");
+    }
 
-        return Ok("Recruiter registered successfully!");
+    [HttpPost("verify-email")]
+    public async Task<IActionResult> VerifyEmail([FromBody] VerifyEmailRequest request)
+    {
+        var success = await _authService.VerifyOtpAsync(request.Email, request.Otp);
+        if (!success) return BadRequest("Invalid OTP or OTP expired.");
+
+        return Ok("Email verified successfully! You can now login.");
     }
 
     [HttpPost("login")]
     public async Task<IActionResult> Login([FromBody] LoginRequest request)
     {
-        var token = await _authService.LoginAsync(request.Email, request.Password);
-        return Ok(new { Token = token });
+        try
+        {
+            var token = await _authService.LoginAsync(request.Email, request.Password);
+            if (token == null) return Unauthorized("Invalid email or password.");
+            return Ok(new { Token = token });
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(ex.Message);
+        }
     }
+}
+
+public class VerifyEmailRequest
+{
+    [JsonPropertyName("email")]
+    public string Email { get; set; } = string.Empty;
+    [JsonPropertyName("otp")]
+    public string Otp { get; set; } = string.Empty;
 }
 
 public class LoginRequest
