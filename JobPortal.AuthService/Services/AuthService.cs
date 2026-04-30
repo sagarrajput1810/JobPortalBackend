@@ -8,6 +8,7 @@ using System.Security.Claims;
 using Microsoft.Extensions.Configuration;
 using MassTransit;
 using JobPortal.Shared.Events;
+using Google.Apis.Auth;
 
 namespace JobPortal.AuthService.Services;
 
@@ -24,14 +25,80 @@ public class AuthServices : IAuthServices
         _publishEndpoint = publishEndpoint;
     }
 
+    public async Task<GoogleLoginResponse?> LoginWithGoogleAsync(string idToken, string? role = null)
+    {
+        try
+        {
+            var settings = new GoogleJsonWebSignature.ValidationSettings()
+            {
+                Audience = new[] { _config["Google:ClientId"] }
+            };
+
+            var payload = await GoogleJsonWebSignature.ValidateAsync(idToken, settings);
+            
+            var user = await _context.UserCredentials.FirstOrDefaultAsync(u => u.Email == payload.Email);
+            
+            if (user == null)
+            {
+                if (string.IsNullOrEmpty(role))
+                {
+                    // Return info to frontend so it can ask for role
+                    return new GoogleLoginResponse 
+                    { 
+                        IsNewUser = true, 
+                        Email = payload.Email, 
+                        FullName = payload.Name 
+                    };
+                }
+
+                // Create new user with selected role
+                user = new UserCredential
+                {
+                    Email = payload.Email,
+                    FullName = payload.Name,
+                    PasswordHash = "GOOGLE_AUTH",
+                    Role = role,
+                    IsEmailVerified = true,
+                    CreatedAt = DateTime.UtcNow
+                };
+                _context.UserCredentials.Add(user);
+                await _context.SaveChangesAsync();
+            }
+
+            return new GoogleLoginResponse 
+            { 
+                Token = GenerateToken(user), 
+                IsNewUser = false 
+            };
+        }
+        catch (Exception)
+        {
+            return null;
+        }
+    }
+
     public async Task<bool> RegisterAsync(RegisterRequest request, string role)
     {
-        if (await _context.UserCredentials.AnyAsync(u => u.Email == request.Email))
-            return false;
+        var existingUser = await _context.UserCredentials.FirstOrDefaultAsync(u => u.Email == request.Email);
+        
+        if (existingUser != null)
+        {
+            if (existingUser.IsEmailVerified)
+                return false; // Email truly exists and is verified
+
+            // If user exists but NOT verified, update their info and send new OTP
+            existingUser.PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password);
+            existingUser.FullName = request.FullName;
+            existingUser.Role = role;
+            existingUser.VerificationOtp = new Random().Next(100000, 999999).ToString();
+            existingUser.OtpExpiry = DateTime.UtcNow.AddMinutes(15);
+            
+            await _context.SaveChangesAsync();
+            await _publishEndpoint.Publish(new UserRegisteredEvent(existingUser.Email, existingUser.Role, existingUser.VerificationOtp));
+            return true;
+        }
 
         string passwordHash = BCrypt.Net.BCrypt.HashPassword(request.Password);
-
-        // Generate a random 6-digit OTP
         string otp = new Random().Next(100000, 999999).ToString();
 
         var newUser = new UserCredential
@@ -41,14 +108,13 @@ public class AuthServices : IAuthServices
             FullName = request.FullName,
             Role = role,
             VerificationOtp = otp,
-            OtpExpiry = DateTime.UtcNow.AddMinutes(15), // OTP valid for 15 mins
+            OtpExpiry = DateTime.UtcNow.AddMinutes(15),
             IsEmailVerified = false
         };
 
         _context.UserCredentials.Add(newUser);
         await _context.SaveChangesAsync();
 
-        // Publish event to NotificationService to send email
         await _publishEndpoint.Publish(new UserRegisteredEvent(newUser.Email, newUser.Role, otp));
 
         return true;

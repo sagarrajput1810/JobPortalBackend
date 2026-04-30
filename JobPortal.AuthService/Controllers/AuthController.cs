@@ -5,6 +5,8 @@ using JobPortal.Shared.Events;
 
 using System.Text.Json.Serialization;
 
+using Microsoft.AspNetCore.RateLimiting;
+
 namespace JobPortal.AuthService.Models;
 
 [ApiController]
@@ -41,6 +43,7 @@ public class AuthController : ControllerBase
         return Ok("Recruiter registered successfully! Please check your email for OTP.");
     }
 
+    [EnableRateLimiting("OtpPolicy")]
     [HttpPost("verify-email")]
     public async Task<IActionResult> VerifyEmail([FromBody] VerifyEmailRequest request)
     {
@@ -50,6 +53,7 @@ public class AuthController : ControllerBase
         return Ok("Email verified successfully! You can now login.");
     }
 
+    [EnableRateLimiting("LoginPolicy")]
     [HttpPost("login")]
     public async Task<IActionResult> Login([FromBody] LoginRequest request)
     {
@@ -64,6 +68,28 @@ public class AuthController : ControllerBase
             return BadRequest(ex.Message);
         }
     }
+
+    [HttpPost("google-login")]
+    public async Task<IActionResult> GoogleLogin([FromBody] GoogleLoginRequest request)
+    {
+        var response = await _authService.LoginWithGoogleAsync(request.IdToken, request.Role);
+        if (response == null) return Unauthorized("Google authentication failed.");
+        
+        if (response.IsNewUser)
+        {
+            return Ok(new { IsNewUser = true, Email = response.Email, FullName = response.FullName });
+        }
+
+        return Ok(new { Token = response.Token });
+    }
+}
+
+public class GoogleLoginRequest
+{
+    [JsonPropertyName("idToken")]
+    public string IdToken { get; set; } = string.Empty;
+    [JsonPropertyName("role")]
+    public string? Role { get; set; }
 }
 
 public class VerifyEmailRequest
