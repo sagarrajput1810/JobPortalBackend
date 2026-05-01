@@ -29,21 +29,29 @@ namespace JobPortal.ApplicationService.Controllers
             var userEmail = User.FindFirstValue(ClaimTypes.Email);
 
             if (string.IsNullOrEmpty(userId)) return Unauthorized();
-            if (resume == null) return BadRequest("Resume file is required");
-
-            // 1. Save File to Local Storage
-            string resumeUrl = await _fileService.SaveFileAsync(resume, "resumes");
-
-            // 2. Map to DTO for Service
-            var applicationDto = new JobApplicationCreateDto
+            
+            try
             {
-                JobId = jobId,
-                CoverLetter = coverLetter,
-                ResumeUrl = resumeUrl // Relative URL saved in DB
-            };
+                if (resume == null) return BadRequest("Resume file is required");
 
-            var result = await _applicationService.ApplyForJobAsync(applicationDto, userId, userName ?? "Unknown", userEmail ?? "Unknown");
-            return Ok(result);
+                // 1. Save File to Local Storage
+                string resumeUrl = await _fileService.SaveFileAsync(resume, "resumes");
+
+                // 2. Map to DTO for Service
+                var applicationDto = new JobApplicationCreateDto
+                {
+                    JobId = jobId,
+                    CoverLetter = coverLetter,
+                    ResumeUrl = resumeUrl // Relative URL saved in DB
+                };
+
+                var result = await _applicationService.ApplyForJobAsync(applicationDto, userId, userName ?? "Unknown", userEmail ?? "Unknown");
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
         }
 
         [HttpGet("job/{jobId}")]

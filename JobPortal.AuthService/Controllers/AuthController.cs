@@ -26,10 +26,16 @@ public class AuthController : ControllerBase
     {
         if (request == null) return BadRequest("Invalid request.");
 
-        var success = await _authService.RegisterAsync(request, "Candidate");
-        if (!success) return BadRequest("Registration failed. Email might already exist.");
-
-        return Ok("OTP sent successfully! Please check your email.");
+        try
+        {
+            var success = await _authService.RegisterAsync(request, "Candidate");
+            if (!success) return BadRequest("Registration failed. Email might already exist.");
+            return Ok("OTP sent successfully! Please check your email.");
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(ex.Message);
+        }
     }
 
     [HttpPost("register/recruiter")]
@@ -37,10 +43,16 @@ public class AuthController : ControllerBase
     {
         if (request == null) return BadRequest("Invalid request.");
 
-        var success = await _authService.RegisterAsync(request, "Recruiter");
-        if (!success) return BadRequest("Registration failed. Email might already exist.");
-
-        return Ok("OTP sent successfully! Please check your email.");
+        try
+        {
+            var success = await _authService.RegisterAsync(request, "Recruiter");
+            if (!success) return BadRequest("Registration failed. Email might already exist.");
+            return Ok("OTP sent successfully! Please check your email.");
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(ex.Message);
+        }
     }
 
     [EnableRateLimiting("OtpPolicy")]

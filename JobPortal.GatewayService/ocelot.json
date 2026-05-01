@@ -25,6 +25,18 @@
       "UpstreamHttpMethod": [ "Get", "Put", "Delete" ]
     },
     {
+      "DownstreamPathTemplate": "/api/Job/recruiter/{everything}",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "job-service",
+          "Port": 8080
+        }
+      ],
+      "UpstreamPathTemplate": "/gateway/job/recruiter/{everything}",
+      "UpstreamHttpMethod": [ "Get" ]
+    },
+    {
       "DownstreamPathTemplate": "/api/Job",
       "DownstreamScheme": "http",
       "DownstreamHostAndPorts": [

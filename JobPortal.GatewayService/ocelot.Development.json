@@ -18,11 +18,23 @@
       "DownstreamHostAndPorts": [
         {
           "Host": "localhost",
-          "Port": 5122
+          "Port": 5284
         }
       ],
       "UpstreamPathTemplate": "/gateway/job/{id}",
       "UpstreamHttpMethod": [ "Get", "Put", "Delete" ]
+    },
+    {
+      "DownstreamPathTemplate": "/api/Job/recruiter/{everything}",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "localhost",
+          "Port": 5284
+        }
+      ],
+      "UpstreamPathTemplate": "/gateway/job/recruiter/{everything}",
+      "UpstreamHttpMethod": [ "Get" ]
     },
     {
       "DownstreamPathTemplate": "/api/Job",
@@ -30,7 +42,7 @@
       "DownstreamHostAndPorts": [
         {
           "Host": "localhost",
-          "Port": 5122
+          "Port": 5284
         }
       ],
       "UpstreamPathTemplate": "/gateway/job",
@@ -42,7 +54,7 @@
       "DownstreamHostAndPorts": [
         {
           "Host": "localhost",
-          "Port": 5184
+          "Port": 5129
         }
       ],
       "UpstreamPathTemplate": "/gateway/candidate/{everything}",
@@ -54,7 +66,7 @@
       "DownstreamHostAndPorts": [
         {
           "Host": "localhost",
-          "Port": 5184
+          "Port": 5129
         }
       ],
       "UpstreamPathTemplate": "/gateway/recruiter/{everything}",
@@ -66,7 +78,7 @@
       "DownstreamHostAndPorts": [
         {
           "Host": "localhost",
-          "Port": 5182
+          "Port": 5252
         }
       ],
       "UpstreamPathTemplate": "/gateway/search/{everything}",
@@ -78,7 +90,7 @@
       "DownstreamHostAndPorts": [
         {
           "Host": "localhost",
-          "Port": 5182
+          "Port": 5252
         }
       ],
       "UpstreamPathTemplate": "/gateway/search",
@@ -90,7 +102,7 @@
       "DownstreamHostAndPorts": [
         {
           "Host": "localhost",
-          "Port": 5176
+          "Port": 5243
         }
       ],
       "UpstreamPathTemplate": "/gateway/application/{everything}",

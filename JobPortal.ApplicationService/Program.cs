@@ -91,7 +91,20 @@ if (app.Environment.IsDevelopment())
 app.UseCors("AllowAngular");
 
 // Enable Static Files so uploads can be accessed via URL
-app.UseStaticFiles(); // Default wwwroot
+app.UseStaticFiles(); // For wwwroot
+
+// Ensure the uploads folder is served even if not in wwwroot (optional but safer)
+var uploadsPath = Path.Combine(builder.Environment.ContentRootPath, "wwwroot", "uploads");
+if (!Directory.Exists(uploadsPath))
+{
+    Directory.CreateDirectory(uploadsPath);
+}
+
+app.UseStaticFiles(new StaticFileOptions
+{
+    FileProvider = new PhysicalFileProvider(uploadsPath),
+    RequestPath = "/uploads"
+});
 
 // app.UseHttpsRedirection();
 app.UseAuthentication();

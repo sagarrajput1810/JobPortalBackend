@@ -20,6 +20,15 @@ namespace JobPortal.ApplicationService.Services
 
         public async Task<JobApplicationResponseDto> ApplyForJobAsync(JobApplicationCreateDto applicationDto, string candidateId, string candidateName, string candidateEmail)
         {
+            // Check if already applied
+            var existingApplication = await _context.JobApplications
+                .FirstOrDefaultAsync(a => a.JobId == applicationDto.JobId && a.CandidateId == candidateId);
+            
+            if (existingApplication != null)
+            {
+                throw new Exception("You have already applied for this job.");
+            }
+
             var application = new JobApplication
             {
                 JobId = applicationDto.JobId,

@@ -79,23 +79,28 @@ public class AuthServices : IAuthServices
 
     public async Task<bool> RegisterAsync(RegisterRequest request, string role)
     {
-        var existingUser = await _context.UserCredentials.FirstOrDefaultAsync(u => u.Email == request.Email);
+        var existingUser = await _context.UserCredentials.FirstOrDefaultAsync(u => u.Email.ToLower() == request.Email.ToLower());
         
         if (existingUser != null)
         {
             if (existingUser.IsEmailVerified)
-                return false; // Email truly exists and is verified
-
-            // If user exists but NOT verified, update their info and send new OTP
-            existingUser.PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password);
-            existingUser.FullName = request.FullName;
-            existingUser.Role = role;
-            existingUser.VerificationOtp = new Random().Next(100000, 999999).ToString();
-            existingUser.OtpExpiry = DateTime.UtcNow.AddMinutes(15);
-            
-            await _context.SaveChangesAsync();
-            await _publishEndpoint.Publish(new UserRegisteredEvent(existingUser.Email, existingUser.Role, existingUser.VerificationOtp));
-            return true;
+            {
+                throw new Exception("Email is already registered. Please login.");
+            }
+            else
+            {
+                // If user exists but NOT verified, update their info and send new OTP
+                existingUser.PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password);
+                existingUser.FullName = request.FullName;
+                existingUser.Role = role;
+                existingUser.VerificationOtp = new Random().Next(100000, 999999).ToString();
+                existingUser.OtpExpiry = DateTime.UtcNow.AddMinutes(15);
+                
+                await _context.SaveChangesAsync();
+                await _publishEndpoint.Publish(new UserRegisteredEvent(existingUser.Email, existingUser.Role, existingUser.VerificationOtp));
+                
+                throw new Exception("Email is already registered but not verified. A new OTP has been sent to your email.");
+            }
         }
 
         string passwordHash = BCrypt.Net.BCrypt.HashPassword(request.Password);
