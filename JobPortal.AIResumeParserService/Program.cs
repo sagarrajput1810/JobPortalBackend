@@ -8,6 +8,18 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllers();
 builder.Services.AddOpenApi();
 
+// Add CORS policy
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowAngular",
+        policy =>
+        {
+            policy.WithOrigins(builder.Configuration["AllowedOrigins"] ?? "*")
+                  .AllowAnyHeader()
+                  .AllowAnyMethod();
+        });
+});
+
 // Register HttpClient for API Calls
 builder.Services.AddHttpClient();
 
@@ -46,6 +58,8 @@ if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
 }
+
+app.UseCors("AllowAngular");
 
 app.UseHttpsRedirection();
 app.MapControllers();

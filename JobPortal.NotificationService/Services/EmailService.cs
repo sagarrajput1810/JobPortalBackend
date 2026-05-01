@@ -40,6 +40,9 @@ namespace JobPortal.NotificationService.Services
 
                 _logger.LogInformation($"Connecting to SMTP server {host}:{port}...");
                 
+                // Bypass certificate validation if necessary (common in some environments)
+                smtp.ServerCertificateValidationCallback = (s, c, h, e) => true;
+
                 await smtp.ConnectAsync(host, port, SecureSocketOptions.StartTls);
                 await smtp.AuthenticateAsync(user, pass);
                 await smtp.SendAsync(email);
@@ -49,11 +52,14 @@ namespace JobPortal.NotificationService.Services
             catch (Exception ex)
             {
                 _logger.LogError($"Failed to send email to {to}: {ex.Message}");
-                // In production, you might want to re-throw or handle differently
+                throw; // Re-throw to allow MassTransit to retry
             }
             finally
             {
-                await smtp.DisconnectAsync(true);
+                if (smtp.IsConnected)
+                {
+                    await smtp.DisconnectAsync(true);
+                }
             }
         }
     }

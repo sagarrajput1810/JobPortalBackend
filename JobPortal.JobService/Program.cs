@@ -11,6 +11,18 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container.
 builder.Services.AddControllers();
 
+// Add CORS policy
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowAngular",
+        policy =>
+        {
+            policy.WithOrigins(builder.Configuration["AllowedOrigins"] ?? "*")
+                  .AllowAnyHeader()
+                  .AllowAnyMethod();
+        });
+});
+
 // Register DB Context
 builder.Services.AddDbContext<JobDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
@@ -74,6 +86,8 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI();
 }
+
+app.UseCors("AllowAngular");
 
 // app.UseHttpsRedirection();
 

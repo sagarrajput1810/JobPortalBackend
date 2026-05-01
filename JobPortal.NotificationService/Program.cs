@@ -9,6 +9,18 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
+// Add CORS policy
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowAngular",
+        policy =>
+        {
+            policy.WithOrigins(builder.Configuration["AllowedOrigins"] ?? "*")
+                  .AllowAnyHeader()
+                  .AllowAnyMethod();
+        });
+});
+
 // Register Email Service
 builder.Services.AddScoped<IEmailService, EmailService>();
 
@@ -48,6 +60,8 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI();
 }
+
+app.UseCors("AllowAngular");
 
 app.UseHttpsRedirection();
 app.MapControllers();
