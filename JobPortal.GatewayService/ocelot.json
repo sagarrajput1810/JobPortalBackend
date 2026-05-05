@@ -6,7 +6,7 @@
       "DownstreamHostAndPorts": [
         {
           "Host": "auth-service",
-          "Port": 8080
+          "Port": 80
         }
       ],
       "UpstreamPathTemplate": "/gateway/auth/{everything}",
@@ -18,7 +18,7 @@
       "DownstreamHostAndPorts": [
         {
           "Host": "job-service",
-          "Port": 8080
+          "Port": 80
         }
       ],
       "UpstreamPathTemplate": "/gateway/job/{id}",
@@ -30,7 +30,7 @@
       "DownstreamHostAndPorts": [
         {
           "Host": "job-service",
-          "Port": 8080
+          "Port": 80
         }
       ],
       "UpstreamPathTemplate": "/gateway/job/recruiter/{everything}",
@@ -42,31 +42,31 @@
       "DownstreamHostAndPorts": [
         {
           "Host": "job-service",
-          "Port": 8080
+          "Port": 80
         }
       ],
       "UpstreamPathTemplate": "/gateway/job",
       "UpstreamHttpMethod": [ "Get", "Post" ]
     },
     {
-      "DownstreamPathTemplate": "/api/candidate/{everything}",
+      "DownstreamPathTemplate": "/api/Candidate/{everything}",
       "DownstreamScheme": "http",
       "DownstreamHostAndPorts": [
         {
           "Host": "profile-service",
-          "Port": 8080
+          "Port": 80
         }
       ],
       "UpstreamPathTemplate": "/gateway/candidate/{everything}",
       "UpstreamHttpMethod": [ "Get", "Post", "Put", "Delete" ]
     },
     {
-      "DownstreamPathTemplate": "/api/recruiter/{everything}",
+      "DownstreamPathTemplate": "/api/Recruiter/{everything}",
       "DownstreamScheme": "http",
       "DownstreamHostAndPorts": [
         {
           "Host": "profile-service",
-          "Port": 8080
+          "Port": 80
         }
       ],
       "UpstreamPathTemplate": "/gateway/recruiter/{everything}",
@@ -78,7 +78,7 @@
       "DownstreamHostAndPorts": [
         {
           "Host": "search-service",
-          "Port": 8080
+          "Port": 80
         }
       ],
       "UpstreamPathTemplate": "/gateway/search/{everything}",
@@ -90,7 +90,7 @@
       "DownstreamHostAndPorts": [
         {
           "Host": "search-service",
-          "Port": 8080
+          "Port": 80
         }
       ],
       "UpstreamPathTemplate": "/gateway/search",
@@ -102,10 +102,22 @@
       "DownstreamHostAndPorts": [
         {
           "Host": "application-service",
-          "Port": 8080
+          "Port": 80
         }
       ],
       "UpstreamPathTemplate": "/gateway/application/{everything}",
+      "UpstreamHttpMethod": [ "Get", "Post", "Put", "Delete" ]
+    },
+    {
+      "DownstreamPathTemplate": "/api/Notification/{everything}",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "notification-service",
+          "Port": 80
+        }
+      ],
+      "UpstreamPathTemplate": "/gateway/notification/{everything}",
       "UpstreamHttpMethod": [ "Get", "Post", "Put", "Delete" ]
     }
   ],

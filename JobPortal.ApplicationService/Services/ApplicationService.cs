@@ -32,6 +32,8 @@ namespace JobPortal.ApplicationService.Services
             var application = new JobApplication
             {
                 JobId = applicationDto.JobId,
+                JobTitle = applicationDto.JobTitle,
+                CompanyName = applicationDto.CompanyName,
                 CandidateId = candidateId,
                 CandidateName = candidateName,
                 CandidateEmail = candidateEmail,
@@ -50,7 +52,9 @@ namespace JobPortal.ApplicationService.Services
                 application.JobId, 
                 application.CandidateEmail, 
                 application.CandidateName, 
-                application.ResumeUrl
+                application.ResumeUrl,
+                application.JobTitle,
+                application.CompanyName
             ));
 
             return MapToDto(application);
@@ -103,6 +107,8 @@ namespace JobPortal.ApplicationService.Services
             {
                 Id = application.Id,
                 JobId = application.JobId,
+                JobTitle = application.JobTitle,
+                CompanyName = application.CompanyName,
                 CandidateId = application.CandidateId,
                 CandidateName = application.CandidateName,
                 CandidateEmail = application.CandidateEmail,

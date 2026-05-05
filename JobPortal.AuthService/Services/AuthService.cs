@@ -97,7 +97,7 @@ public class AuthServices : IAuthServices
                 existingUser.OtpExpiry = DateTime.UtcNow.AddMinutes(15);
                 
                 await _context.SaveChangesAsync();
-                await _publishEndpoint.Publish(new UserRegisteredEvent(existingUser.Email, existingUser.Role, existingUser.VerificationOtp));
+                await _publishEndpoint.Publish(new UserRegisteredEvent(existingUser.Id, existingUser.Email, existingUser.FullName, existingUser.Role, existingUser.VerificationOtp));
                 
                 throw new Exception("Email is already registered but not verified. A new OTP has been sent to your email.");
             }
@@ -120,7 +120,7 @@ public class AuthServices : IAuthServices
         _context.UserCredentials.Add(newUser);
         await _context.SaveChangesAsync();
 
-        await _publishEndpoint.Publish(new UserRegisteredEvent(newUser.Email, newUser.Role, otp));
+        await _publishEndpoint.Publish(new UserRegisteredEvent(newUser.Id, newUser.Email, newUser.FullName, newUser.Role, otp));
 
         return true;
     }

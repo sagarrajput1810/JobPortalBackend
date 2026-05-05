@@ -1,4 +1,4 @@
 namespace JobPortal.Shared.Events
 {
-    public record UserRegisteredEvent(string Email, string Role, string Otp);
+    public record UserRegisteredEvent(Guid UserId, string Email, string FullName, string Role, string Otp);
 }

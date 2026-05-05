@@ -42,6 +42,14 @@ public class RecruiterController : ControllerBase
         return Ok(profile);
     }
 
+    [HttpGet("user/{userId}")]
+    public async Task<IActionResult> GetProfileByUserId(Guid userId)
+    {
+        var profile = await _context.RecruiterProfiles.FirstOrDefaultAsync(p => p.UserId == userId);
+        if (profile == null) return NotFound();
+        return Ok(profile);
+    }
+
     // 4. UPDATE: Company details update karna
     [HttpPut("{id}")]
     public async Task<IActionResult> UpdateProfile(Guid id, [FromBody] RecruiterProfile updatedProfile)

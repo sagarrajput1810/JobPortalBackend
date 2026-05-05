@@ -1,6 +1,8 @@
 using JobPortal.Shared.Events;
 using MassTransit;
 using JobPortal.NotificationService.Services;
+using JobPortal.NotificationService.Data;
+using JobPortal.NotificationService.Models;
 
 namespace JobPortal.NotificationService.Consumers
 {
@@ -8,11 +10,13 @@ namespace JobPortal.NotificationService.Consumers
     {
         private readonly ILogger<UserRegisteredConsumer> _logger;
         private readonly IEmailService _emailService;
+        private readonly NotificationDbContext _dbContext;
 
-        public UserRegisteredConsumer(ILogger<UserRegisteredConsumer> logger, IEmailService emailService)
+        public UserRegisteredConsumer(ILogger<UserRegisteredConsumer> logger, IEmailService emailService, NotificationDbContext dbContext)
         {
             _logger = logger;
             _emailService = emailService;
+            _dbContext = dbContext;
         }
 
         public async Task Consume(ConsumeContext<UserRegisteredEvent> context)
@@ -20,6 +24,7 @@ namespace JobPortal.NotificationService.Consumers
             var userEvent = context.Message;
             _logger.LogInformation($"Processing UserRegisteredEvent for: {userEvent.Email}");
 
+            // 1. Send Email
             string subject = "Welcome to JobPortal - Verify Your Email";
             string body = $@"
                 <h1>Welcome to JobPortal!</h1>
@@ -31,6 +36,19 @@ namespace JobPortal.NotificationService.Consumers
                 <p>Best Regards,<br/>JobPortal Team</p>";
 
             await _emailService.SendEmailAsync(userEvent.Email, subject, body);
+
+            // 2. Save In-App Notification
+            var notification = new UserNotification
+            {
+                UserEmail = userEvent.Email,
+                Title = "Welcome to JobPortal!",
+                Message = $"Hi! Your registration as a {userEvent.Role} was successful. Please verify your email using OTP: {userEvent.Otp}",
+                CreatedAt = DateTime.UtcNow,
+                IsRead = false
+            };
+
+            _dbContext.UserNotifications.Add(notification);
+            await _dbContext.SaveChangesAsync();
         }
     }
 }

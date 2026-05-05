@@ -25,7 +25,8 @@ namespace JobPortal.NotificationService.Services
         public async Task SendEmailAsync(string to, string subject, string body)
         {
             var email = new MimeMessage();
-            email.From.Add(MailboxAddress.Parse(_config["EmailSettings:FromEmail"]));
+            var fromEmail = _config["EmailSettings:FromEmail"] ?? "no-reply@jobportal.com";
+            email.From.Add(MailboxAddress.Parse(fromEmail));
             email.To.Add(MailboxAddress.Parse(to));
             email.Subject = subject;
             email.Body = new TextPart(MimeKit.Text.TextFormat.Html) { Text = body };
@@ -33,10 +34,10 @@ namespace JobPortal.NotificationService.Services
             using var smtp = new SmtpClient();
             try
             {
-                var host = _config["EmailSettings:SmtpServer"];
+                var host = _config["EmailSettings:SmtpServer"] ?? "localhost";
                 var port = int.Parse(_config["EmailSettings:SmtpPort"] ?? "587");
-                var user = _config["EmailSettings:Username"];
-                var pass = _config["EmailSettings:Password"];
+                var user = _config["EmailSettings:Username"] ?? "";
+                var pass = _config["EmailSettings:Password"] ?? "";
 
                 _logger.LogInformation($"Connecting to SMTP server {host}:{port}...");
                 
@@ -44,7 +45,10 @@ namespace JobPortal.NotificationService.Services
                 smtp.ServerCertificateValidationCallback = (s, c, h, e) => true;
 
                 await smtp.ConnectAsync(host, port, SecureSocketOptions.StartTls);
-                await smtp.AuthenticateAsync(user, pass);
+                if (!string.IsNullOrEmpty(user))
+                {
+                    await smtp.AuthenticateAsync(user, pass);
+                }
                 await smtp.SendAsync(email);
                 
                 _logger.LogInformation($"Email sent successfully to {to}");

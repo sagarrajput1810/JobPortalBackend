@@ -10,6 +10,9 @@ namespace JobPortal.ApplicationService.Models
         [Required]
         public int JobId { get; set; } // JobService wala Id
 
+        public string JobTitle { get; set; } = string.Empty;
+        public string CompanyName { get; set; } = string.Empty;
+
         [Required]
         public string CandidateId { get; set; } = string.Empty; // AuthService wala UserID
 

@@ -6,6 +6,8 @@ namespace JobPortal.ApplicationService.DTOs
     {
         [Required]
         public int JobId { get; set; }
+        public string JobTitle { get; set; } = string.Empty;
+        public string CompanyName { get; set; } = string.Empty;
         public string ResumeUrl { get; set; } = string.Empty;
         public string? CoverLetter { get; set; }
     }
@@ -14,6 +16,8 @@ namespace JobPortal.ApplicationService.DTOs
     {
         public int Id { get; set; }
         public int JobId { get; set; }
+        public string JobTitle { get; set; } = string.Empty;
+        public string CompanyName { get; set; } = string.Empty;
         public string CandidateId { get; set; } = string.Empty;
         public string CandidateName { get; set; } = string.Empty;
         public string CandidateEmail { get; set; } = string.Empty;
