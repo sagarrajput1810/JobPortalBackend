@@ -97,6 +97,10 @@ builder.Services.AddMassTransit(x =>
         x.UsingAzureServiceBus((context, cfg) =>
         {
             cfg.Host(builder.Configuration["ServiceBus:ConnectionString"]);
+            
+            // For Basic Tier: Disable topic creation
+            cfg.DeployPublishTopology = false;
+            
             cfg.ConfigureEndpoints(context);
         });
     }

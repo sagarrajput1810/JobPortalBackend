@@ -10,6 +10,7 @@ using System.Text;
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
+builder.Logging.SetMinimumLevel(LogLevel.Debug);
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
@@ -74,12 +75,24 @@ builder.Services.AddMassTransit(x =>
     }
     else
     {
+        var connString = builder.Configuration["ServiceBus:ConnectionString"];
+        Console.WriteLine($"[NotificationService] Configuring Azure Service Bus. Connection String length: {connString?.Length ?? 0}");
+        
         x.UsingAzureServiceBus((context, cfg) =>
         {
-            cfg.Host(builder.Configuration["ServiceBus:ConnectionString"]);
+            Console.WriteLine("[NotificationService] Inside UsingAzureServiceBus configuration...");
+            cfg.Host(connString);
             
+            // For Basic Tier: Disable topic creation
+            cfg.DeployPublishTopology = false;
+
             cfg.ReceiveEndpoint("user-registered-event", e =>
             {
+                e.Handler<UserRegisteredEvent>(context => 
+                {
+                    Console.WriteLine($"[NotificationService] RAW HANDLER received event for: {context.Message.Email}");
+                    return Task.CompletedTask;
+                });
                 e.ConfigureConsumer<UserRegisteredConsumer>(context);
             });
 
@@ -93,12 +106,14 @@ builder.Services.AddMassTransit(x =>
                 e.ConfigureConsumer<ApplicationStatusUpdatedConsumer>(context);
             });
 
-            cfg.ConfigureEndpoints(context);
+            // Removed cfg.ConfigureEndpoints(context) to prevent automatic topic/queue creation conflicts on Basic Tier
         });
     }
 });
 
 var app = builder.Build();
+
+Console.WriteLine("[NotificationService] Application Build complete. Starting app...");
 
 if (app.Environment.IsDevelopment())
 {
@@ -108,7 +123,7 @@ if (app.Environment.IsDevelopment())
 
 app.UseCors("AllowAngular");
 
-app.UseHttpsRedirection();
+// app.UseHttpsRedirection();
 
 app.UseAuthentication();
 app.UseAuthorization();

@@ -79,6 +79,8 @@ public class AuthServices : IAuthServices
 
     public async Task<bool> RegisterAsync(RegisterRequest request, string role)
     {
+        Console.WriteLine($"[AuthService] Received RegisterRequest: Email={request.Email}, FullName={request.FullName}, Role={role}");
+        
         var existingUser = await _context.UserCredentials.FirstOrDefaultAsync(u => u.Email.ToLower() == request.Email.ToLower());
         
         if (existingUser != null)
@@ -98,8 +100,19 @@ public class AuthServices : IAuthServices
                 
                 await _context.SaveChangesAsync();
                 
-                var endpoint = await _sendEndpointProvider.GetSendEndpoint(new Uri("queue:user-registered-event"));
-                await endpoint.Send(new UserRegisteredEvent(existingUser.Id, existingUser.Email, existingUser.FullName, existingUser.Role, existingUser.VerificationOtp));
+                Console.WriteLine($"[AuthService] Data saved for existing user: {existingUser.Email}. Sending OTP...");
+                
+                try 
+                {
+                    var endpoint = await _sendEndpointProvider.GetSendEndpoint(new Uri("queue:user-registered-event"));
+                    await endpoint.Send(new UserRegisteredEvent(existingUser.Id, existingUser.Email, existingUser.FullName, existingUser.Role, existingUser.VerificationOtp));
+                    Console.WriteLine("[AuthService] OTP sent successfully to queue.");
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"[AuthService] Error sending to Service Bus: {ex.Message}");
+                    // Don't throw, let the user know data was saved
+                }
                 
                 throw new Exception("Email is already registered but not verified. A new OTP has been sent to your email.");
             }
@@ -121,9 +134,19 @@ public class AuthServices : IAuthServices
 
         _context.UserCredentials.Add(newUser);
         await _context.SaveChangesAsync();
+        
+        Console.WriteLine($"[AuthService] New user saved: {newUser.Email}. Sending OTP...");
 
-        var sendEndpoint = await _sendEndpointProvider.GetSendEndpoint(new Uri("queue:user-registered-event"));
-        await sendEndpoint.Send(newUser.Id, newUser.Email, newUser.FullName, newUser.Role, otp);
+        try 
+        {
+            var sendEndpoint = await _sendEndpointProvider.GetSendEndpoint(new Uri("queue:user-registered-event"));
+            await sendEndpoint.Send(new UserRegisteredEvent(newUser.Id, newUser.Email, newUser.FullName, newUser.Role, otp));
+            Console.WriteLine("[AuthService] OTP sent successfully for new user.");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[AuthService] Error sending to Service Bus: {ex.Message}");
+        }
 
         return true;
     }

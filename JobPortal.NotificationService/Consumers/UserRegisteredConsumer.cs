@@ -22,6 +22,7 @@ namespace JobPortal.NotificationService.Consumers
         public async Task Consume(ConsumeContext<UserRegisteredEvent> context)
         {
             var userEvent = context.Message;
+            Console.WriteLine($"[NotificationService] Consumer received event for: {userEvent.Email}");
             _logger.LogInformation($"Processing UserRegisteredEvent for: {userEvent.Email}");
 
             // 1. Send Email
