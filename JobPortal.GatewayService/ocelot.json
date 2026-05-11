@@ -6,7 +6,7 @@
       "DownstreamHostAndPorts": [
         {
           "Host": "auth-service",
-          "Port": 80
+          "Port": 8080
         }
       ],
       "UpstreamPathTemplate": "/gateway/auth/{everything}",
@@ -18,7 +18,7 @@
       "DownstreamHostAndPorts": [
         {
           "Host": "job-service",
-          "Port": 80
+          "Port": 8080
         }
       ],
       "UpstreamPathTemplate": "/gateway/job/{id}",
@@ -30,7 +30,7 @@
       "DownstreamHostAndPorts": [
         {
           "Host": "job-service",
-          "Port": 80
+          "Port": 8080
         }
       ],
       "UpstreamPathTemplate": "/gateway/job/recruiter/{everything}",
@@ -42,7 +42,7 @@
       "DownstreamHostAndPorts": [
         {
           "Host": "job-service",
-          "Port": 80
+          "Port": 8080
         }
       ],
       "UpstreamPathTemplate": "/gateway/job",
@@ -54,7 +54,7 @@
       "DownstreamHostAndPorts": [
         {
           "Host": "profile-service",
-          "Port": 80
+          "Port": 8080
         }
       ],
       "UpstreamPathTemplate": "/gateway/candidate/{everything}",
@@ -66,7 +66,7 @@
       "DownstreamHostAndPorts": [
         {
           "Host": "profile-service",
-          "Port": 80
+          "Port": 8080
         }
       ],
       "UpstreamPathTemplate": "/gateway/recruiter/{everything}",
@@ -78,7 +78,7 @@
       "DownstreamHostAndPorts": [
         {
           "Host": "search-service",
-          "Port": 80
+          "Port": 8080
         }
       ],
       "UpstreamPathTemplate": "/gateway/search/{everything}",
@@ -90,7 +90,7 @@
       "DownstreamHostAndPorts": [
         {
           "Host": "search-service",
-          "Port": 80
+          "Port": 8080
         }
       ],
       "UpstreamPathTemplate": "/gateway/search",
@@ -102,7 +102,7 @@
       "DownstreamHostAndPorts": [
         {
           "Host": "application-service",
-          "Port": 80
+          "Port": 8080
         }
       ],
       "UpstreamPathTemplate": "/gateway/application/{everything}",
@@ -114,7 +114,7 @@
       "DownstreamHostAndPorts": [
         {
           "Host": "notification-service",
-          "Port": 80
+          "Port": 8080
         }
       ],
       "UpstreamPathTemplate": "/gateway/notification/{everything}",

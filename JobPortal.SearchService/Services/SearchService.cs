@@ -1,61 +1,68 @@
+using Microsoft.EntityFrameworkCore;
+using JobPortal.SearchService.Data;
 using JobPortal.SearchService.Models;
 
 namespace JobPortal.SearchService.Services
 {
     public class SearchService : ISearchService
     {
-        // For demonstration purposes, we use an in-memory list. 
-        // In a real application, you would use Elasticsearch, Meilisearch, or Lucene.
-        private static readonly List<JobDocument> _jobs = new();
+        private readonly SearchDbContext _context;
+
+        public SearchService(SearchDbContext context)
+        {
+            _context = context;
+        }
 
         public async Task<IEnumerable<JobDocument>> SearchJobsAsync(string query)
         {
             if (string.IsNullOrWhiteSpace(query))
-                return _jobs;
+                return await _context.JobDocuments.ToListAsync();
 
             var lowerQuery = query.ToLower();
-            var results = _jobs.Where(j =>
-                j.Title.ToLower().Contains(lowerQuery) ||
-                j.CompanyName.ToLower().Contains(lowerQuery) ||
-                j.Location.ToLower().Contains(lowerQuery) ||
-                j.Description.ToLower().Contains(lowerQuery)
-            );
-
-            return await Task.FromResult(results.ToList());
+            return await _context.JobDocuments
+                .Where(j =>
+                    j.Title.ToLower().Contains(lowerQuery) ||
+                    j.CompanyName.ToLower().Contains(lowerQuery) ||
+                    j.Location.ToLower().Contains(lowerQuery) ||
+                    j.Description.ToLower().Contains(lowerQuery)
+                ).ToListAsync();
         }
 
         public async Task<bool> IndexJobAsync(JobDocument job)
         {
-            var existing = _jobs.FirstOrDefault(j => j.Id == job.Id);
+            var existing = await _context.JobDocuments.FindAsync(job.Id);
             if (existing != null)
             {
-                _jobs.Remove(existing);
+                _context.Entry(existing).CurrentValues.SetValues(job);
             }
-            _jobs.Add(job);
-            return await Task.FromResult(true);
+            else
+            {
+                _context.JobDocuments.Add(job);
+            }
+            
+            return await _context.SaveChangesAsync() > 0;
         }
 
         public async Task<bool> DeleteJobAsync(int id)
         {
-            var job = _jobs.FirstOrDefault(j => j.Id == id);
+            var job = await _context.JobDocuments.FindAsync(id);
             if (job != null)
             {
-                _jobs.Remove(job);
-                return await Task.FromResult(true);
+                _context.JobDocuments.Remove(job);
+                return await _context.SaveChangesAsync() > 0;
             }
-            return await Task.FromResult(false);
+            return false;
         }
 
         public async Task<bool> UpdateJobAsync(JobDocument job)
         {
-            var existing = _jobs.FirstOrDefault(j => j.Id == job.Id);
+            var existing = await _context.JobDocuments.FindAsync(job.Id);
             if (existing != null)
             {
-                _jobs.Remove(existing);
-                _jobs.Add(job);
-                return await Task.FromResult(true);
+                _context.Entry(existing).CurrentValues.SetValues(job);
+                return await _context.SaveChangesAsync() > 0;
             }
-            return await Task.FromResult(false);
+            return false;
         }
     }
 }

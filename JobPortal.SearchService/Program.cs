@@ -1,10 +1,17 @@
 using JobPortal.SearchService.Services;
 using MassTransit;
+using Microsoft.EntityFrameworkCore;
+using JobPortal.SearchService.Data;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddControllers();
+
+// Add DbContext
+builder.Services.AddDbContext<SearchDbContext>(options =>
+    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+
 builder.Services.AddScoped<ISearchService, SearchService>();
 
 // Add CORS policy
