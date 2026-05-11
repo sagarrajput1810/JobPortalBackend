@@ -48,6 +48,22 @@ builder.Services.AddMassTransit(x =>
         x.UsingAzureServiceBus((context, cfg) =>
         {
             cfg.Host(builder.Configuration["ServiceBus:ConnectionString"]);
+            
+            cfg.ReceiveEndpoint("job-created-event-search", e =>
+            {
+                e.ConfigureConsumer<JobPortal.SearchService.Consumers.JobEventsConsumer>(context);
+            });
+
+            cfg.ReceiveEndpoint("job-updated-event-search", e =>
+            {
+                e.ConfigureConsumer<JobPortal.SearchService.Consumers.JobEventsConsumer>(context);
+            });
+
+            cfg.ReceiveEndpoint("job-deleted-event-search", e =>
+            {
+                e.ConfigureConsumer<JobPortal.SearchService.Consumers.JobEventsConsumer>(context);
+            });
+
             cfg.ConfigureEndpoints(context);
         });
     }

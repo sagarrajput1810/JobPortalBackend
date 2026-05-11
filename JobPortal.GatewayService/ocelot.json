@@ -2,123 +2,166 @@
   "Routes": [
     {
       "DownstreamPathTemplate": "/api/Auth/{everything}",
-      "DownstreamScheme": "http",
+      "DownstreamScheme": "https",
       "DownstreamHostAndPorts": [
         {
           "Host": "auth-service.internal.victorioussmoke-d03cd650.centralindia.azurecontainerapps.io",
-          "Port": 80
+          "Port": 443
         }
       ],
       "UpstreamPathTemplate": "/gateway/auth/{everything}",
-      "UpstreamHttpMethod": [ "Get", "Post", "Put", "Delete" ]
+      "UpstreamHttpMethod": [ "Get", "Post", "Put", "Delete" ],
+      "HttpHandlerOptions": {
+        "AllowAutoRedirect": true,
+        "DangerousAcceptAnyServerCertificateValidator": true
+      },
+      "QoSOptions": {
+        "TimeoutValue": 60000
+      }
     },
     {
       "DownstreamPathTemplate": "/api/Job/{id}",
-      "DownstreamScheme": "http",
+      "DownstreamScheme": "https",
       "DownstreamHostAndPorts": [
         {
           "Host": "job-service.internal.victorioussmoke-d03cd650.centralindia.azurecontainerapps.io",
-          "Port": 80
+          "Port": 443
         }
       ],
       "UpstreamPathTemplate": "/gateway/job/{id}",
-      "UpstreamHttpMethod": [ "Get", "Put", "Delete" ]
+      "UpstreamHttpMethod": [ "Get", "Put", "Delete" ],
+      "HttpHandlerOptions": {
+        "AllowAutoRedirect": true,
+        "DangerousAcceptAnyServerCertificateValidator": true
+      }
     },
     {
       "DownstreamPathTemplate": "/api/Job/recruiter/{everything}",
-      "DownstreamScheme": "http",
+      "DownstreamScheme": "https",
       "DownstreamHostAndPorts": [
         {
           "Host": "job-service.internal.victorioussmoke-d03cd650.centralindia.azurecontainerapps.io",
-          "Port": 80
+          "Port": 443
         }
       ],
       "UpstreamPathTemplate": "/gateway/job/recruiter/{everything}",
-      "UpstreamHttpMethod": [ "Get" ]
+      "UpstreamHttpMethod": [ "Get" ],
+      "HttpHandlerOptions": {
+        "AllowAutoRedirect": true,
+        "DangerousAcceptAnyServerCertificateValidator": true
+      }
     },
     {
       "DownstreamPathTemplate": "/api/Job",
-      "DownstreamScheme": "http",
+      "DownstreamScheme": "https",
       "DownstreamHostAndPorts": [
         {
           "Host": "job-service.internal.victorioussmoke-d03cd650.centralindia.azurecontainerapps.io",
-          "Port": 80
+          "Port": 443
         }
       ],
       "UpstreamPathTemplate": "/gateway/job",
-      "UpstreamHttpMethod": [ "Get", "Post" ]
+      "UpstreamHttpMethod": [ "Get", "Post" ],
+      "HttpHandlerOptions": {
+        "AllowAutoRedirect": true,
+        "DangerousAcceptAnyServerCertificateValidator": true
+      }
     },
     {
       "DownstreamPathTemplate": "/api/Candidate/{everything}",
-      "DownstreamScheme": "http",
+      "DownstreamScheme": "https",
       "DownstreamHostAndPorts": [
         {
           "Host": "profile-service.internal.victorioussmoke-d03cd650.centralindia.azurecontainerapps.io",
-          "Port": 80
+          "Port": 443
         }
       ],
       "UpstreamPathTemplate": "/gateway/candidate/{everything}",
-      "UpstreamHttpMethod": [ "Get", "Post", "Put", "Delete" ]
+      "UpstreamHttpMethod": [ "Get", "Post", "Put", "Delete" ],
+      "HttpHandlerOptions": {
+        "AllowAutoRedirect": true,
+        "DangerousAcceptAnyServerCertificateValidator": true
+      }
     },
     {
       "DownstreamPathTemplate": "/api/Recruiter/{everything}",
-      "DownstreamScheme": "http",
+      "DownstreamScheme": "https",
       "DownstreamHostAndPorts": [
         {
           "Host": "profile-service.internal.victorioussmoke-d03cd650.centralindia.azurecontainerapps.io",
-          "Port": 80
+          "Port": 443
         }
       ],
       "UpstreamPathTemplate": "/gateway/recruiter/{everything}",
-      "UpstreamHttpMethod": [ "Get", "Post", "Put", "Delete" ]
+      "UpstreamHttpMethod": [ "Get", "Post", "Put", "Delete" ],
+      "HttpHandlerOptions": {
+        "AllowAutoRedirect": true,
+        "DangerousAcceptAnyServerCertificateValidator": true
+      }
     },
     {
       "DownstreamPathTemplate": "/api/search/{everything}",
-      "DownstreamScheme": "http",
+      "DownstreamScheme": "https",
       "DownstreamHostAndPorts": [
         {
           "Host": "search-service.internal.victorioussmoke-d03cd650.centralindia.azurecontainerapps.io",
-          "Port": 80
+          "Port": 443
         }
       ],
       "UpstreamPathTemplate": "/gateway/search/{everything}",
-      "UpstreamHttpMethod": [ "Get", "Post", "Put", "Delete" ]
+      "UpstreamHttpMethod": [ "Get", "Post", "Put", "Delete" ],
+      "HttpHandlerOptions": {
+        "AllowAutoRedirect": true,
+        "DangerousAcceptAnyServerCertificateValidator": true
+      }
     },
     {
       "DownstreamPathTemplate": "/api/search",
-      "DownstreamScheme": "http",
+      "DownstreamScheme": "https",
       "DownstreamHostAndPorts": [
         {
           "Host": "search-service.internal.victorioussmoke-d03cd650.centralindia.azurecontainerapps.io",
-          "Port": 80
+          "Port": 443
         }
       ],
       "UpstreamPathTemplate": "/gateway/search",
-      "UpstreamHttpMethod": [ "Get" ]
+      "UpstreamHttpMethod": [ "Get" ],
+      "HttpHandlerOptions": {
+        "AllowAutoRedirect": true,
+        "DangerousAcceptAnyServerCertificateValidator": true
+      }
     },
     {
       "DownstreamPathTemplate": "/api/Application/{everything}",
-      "DownstreamScheme": "http",
+      "DownstreamScheme": "https",
       "DownstreamHostAndPorts": [
         {
           "Host": "application-service.internal.victorioussmoke-d03cd650.centralindia.azurecontainerapps.io",
-          "Port": 80
+          "Port": 443
         }
       ],
       "UpstreamPathTemplate": "/gateway/application/{everything}",
-      "UpstreamHttpMethod": [ "Get", "Post", "Put", "Delete" ]
+      "UpstreamHttpMethod": [ "Get", "Post", "Put", "Delete" ],
+      "HttpHandlerOptions": {
+        "AllowAutoRedirect": true,
+        "DangerousAcceptAnyServerCertificateValidator": true
+      }
     },
     {
       "DownstreamPathTemplate": "/api/Notification/{everything}",
-      "DownstreamScheme": "http",
+      "DownstreamScheme": "https",
       "DownstreamHostAndPorts": [
         {
           "Host": "notification-service.internal.victorioussmoke-d03cd650.centralindia.azurecontainerapps.io",
-          "Port": 80
+          "Port": 443
         }
       ],
       "UpstreamPathTemplate": "/gateway/notification/{everything}",
-      "UpstreamHttpMethod": [ "Get", "Post", "Put", "Delete" ]
+      "UpstreamHttpMethod": [ "Get", "Post", "Put", "Delete" ],
+      "HttpHandlerOptions": {
+        "AllowAutoRedirect": true,
+        "DangerousAcceptAnyServerCertificateValidator": true
+      }
     }
   ],
   "GlobalConfiguration": {

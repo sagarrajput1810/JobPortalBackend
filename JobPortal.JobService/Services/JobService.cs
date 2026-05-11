@@ -10,12 +10,12 @@ namespace JobPortal.JobService.Services
     public class JobService : IJobService
     {
         private readonly JobDbContext _context;
-        private readonly IPublishEndpoint _publishEndpoint;
+        private readonly ISendEndpointProvider _sendEndpointProvider;
 
-        public JobService(JobDbContext context, IPublishEndpoint publishEndpoint)
+        public JobService(JobDbContext context, ISendEndpointProvider sendEndpointProvider)
         {
             _context = context;
-            _publishEndpoint = publishEndpoint;
+            _sendEndpointProvider = sendEndpointProvider;
         }
 
         public async Task<IEnumerable<JobResponseDto>> GetAllJobsAsync()
@@ -47,8 +47,9 @@ namespace JobPortal.JobService.Services
             _context.JobPostings.Add(job);
             await _context.SaveChangesAsync();
 
-            // Publish JobCreatedEvent
-            await _publishEndpoint.Publish(new JobCreatedEvent(
+            // Send to Search Service Queue
+            var searchEndpoint = await _sendEndpointProvider.GetSendEndpoint(new Uri("queue:job-created-event-search"));
+            await searchEndpoint.Send(new JobCreatedEvent(
                 job.Id,
                 job.Title,
                 job.Description,
@@ -75,8 +76,9 @@ namespace JobPortal.JobService.Services
 
             await _context.SaveChangesAsync();
 
-            // Publish JobUpdatedEvent
-            await _publishEndpoint.Publish(new JobUpdatedEvent(
+            // Send to Search Service Queue
+            var searchEndpoint = await _sendEndpointProvider.GetSendEndpoint(new Uri("queue:job-updated-event-search"));
+            await searchEndpoint.Send(new JobUpdatedEvent(
                 job.Id,
                 job.Title,
                 job.Description,
@@ -98,8 +100,9 @@ namespace JobPortal.JobService.Services
             job.IsActive = false;
             await _context.SaveChangesAsync();
 
-            // Publish JobDeletedEvent
-            await _publishEndpoint.Publish(new JobDeletedEvent(job.Id));
+            // Send to Search Service Queue
+            var searchEndpoint = await _sendEndpointProvider.GetSendEndpoint(new Uri("queue:job-deleted-event-search"));
+            await searchEndpoint.Send(new JobDeletedEvent(job.Id));
 
             return true;
         }

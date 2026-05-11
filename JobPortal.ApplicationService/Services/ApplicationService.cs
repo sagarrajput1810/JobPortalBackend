@@ -10,12 +10,12 @@ namespace JobPortal.ApplicationService.Services
     public class ApplicationService : IApplicationService
     {
         private readonly ApplicationDbContext _context;
-        private readonly IPublishEndpoint _publishEndpoint;
+        private readonly ISendEndpointProvider _sendEndpointProvider;
 
-        public ApplicationService(ApplicationDbContext context, IPublishEndpoint publishEndpoint)
+        public ApplicationService(ApplicationDbContext context, ISendEndpointProvider sendEndpointProvider)
         {
             _context = context;
-            _publishEndpoint = publishEndpoint;
+            _sendEndpointProvider = sendEndpointProvider;
         }
 
         public async Task<JobApplicationResponseDto> ApplyForJobAsync(JobApplicationCreateDto applicationDto, string candidateId, string candidateName, string candidateEmail)
@@ -46,8 +46,7 @@ namespace JobPortal.ApplicationService.Services
             _context.JobApplications.Add(application);
             await _context.SaveChangesAsync();
 
-            // Publish Event to AI & Notification Service
-            await _publishEndpoint.Publish(new JobAppliedEvent(
+            var appEvent = new JobAppliedEvent(
                 application.Id, 
                 application.JobId, 
                 application.CandidateEmail, 
@@ -55,7 +54,15 @@ namespace JobPortal.ApplicationService.Services
                 application.ResumeUrl,
                 application.JobTitle,
                 application.CompanyName
-            ));
+            );
+
+            // Send to Notification Queue
+            var notificationEndpoint = await _sendEndpointProvider.GetSendEndpoint(new Uri("queue:job-applied-event-notification"));
+            await notificationEndpoint.Send(appEvent);
+
+            // Send to AI Parser Queue
+            var aiEndpoint = await _sendEndpointProvider.GetSendEndpoint(new Uri("queue:job-applied-event-ai"));
+            await aiEndpoint.Send(appEvent);
 
             return MapToDto(application);
         }
@@ -84,8 +91,9 @@ namespace JobPortal.ApplicationService.Services
             application.Status = status;
             await _context.SaveChangesAsync();
 
-            // Publish Event for Status Update
-            await _publishEndpoint.Publish(new ApplicationStatusUpdatedEvent(
+            // Send to Notification Queue
+            var notificationEndpoint = await _sendEndpointProvider.GetSendEndpoint(new Uri("queue:application-status-updated-event-notification"));
+            await notificationEndpoint.Send(new ApplicationStatusUpdatedEvent(
                 application.Id,
                 application.CandidateEmail,
                 "Your Application", 

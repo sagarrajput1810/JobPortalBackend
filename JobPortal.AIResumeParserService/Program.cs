@@ -47,6 +47,12 @@ builder.Services.AddMassTransit(x =>
         x.UsingAzureServiceBus((context, cfg) =>
         {
             cfg.Host(builder.Configuration["ServiceBus:ConnectionString"]);
+            
+            cfg.ReceiveEndpoint("job-applied-event-ai", e =>
+            {
+                e.ConfigureConsumer<JobAppliedConsumer>(context);
+            });
+
             cfg.ConfigureEndpoints(context);
         });
     }

@@ -16,13 +16,13 @@ public class AuthServices : IAuthServices
 {
     private readonly ApplicationDbContext _context;
     private readonly IConfiguration _config;
-    private readonly IPublishEndpoint _publishEndpoint;
+    private readonly ISendEndpointProvider _sendEndpointProvider;
 
-    public AuthServices(ApplicationDbContext context, IConfiguration config, IPublishEndpoint publishEndpoint)
+    public AuthServices(ApplicationDbContext context, IConfiguration config, ISendEndpointProvider sendEndpointProvider)
     {
         _context = context;
         _config = config;
-        _publishEndpoint = publishEndpoint;
+        _sendEndpointProvider = sendEndpointProvider;
     }
 
     public async Task<GoogleLoginResponse?> LoginWithGoogleAsync(string idToken, string? role = null)
@@ -97,7 +97,9 @@ public class AuthServices : IAuthServices
                 existingUser.OtpExpiry = DateTime.UtcNow.AddMinutes(15);
                 
                 await _context.SaveChangesAsync();
-                await _publishEndpoint.Publish(new UserRegisteredEvent(existingUser.Id, existingUser.Email, existingUser.FullName, existingUser.Role, existingUser.VerificationOtp));
+                
+                var endpoint = await _sendEndpointProvider.GetSendEndpoint(new Uri("queue:user-registered-event"));
+                await endpoint.Send(new UserRegisteredEvent(existingUser.Id, existingUser.Email, existingUser.FullName, existingUser.Role, existingUser.VerificationOtp));
                 
                 throw new Exception("Email is already registered but not verified. A new OTP has been sent to your email.");
             }
@@ -120,7 +122,8 @@ public class AuthServices : IAuthServices
         _context.UserCredentials.Add(newUser);
         await _context.SaveChangesAsync();
 
-        await _publishEndpoint.Publish(new UserRegisteredEvent(newUser.Id, newUser.Email, newUser.FullName, newUser.Role, otp));
+        var sendEndpoint = await _sendEndpointProvider.GetSendEndpoint(new Uri("queue:user-registered-event"));
+        await sendEndpoint.Send(newUser.Id, newUser.Email, newUser.FullName, newUser.Role, otp);
 
         return true;
     }

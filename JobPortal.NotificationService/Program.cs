@@ -77,6 +77,22 @@ builder.Services.AddMassTransit(x =>
         x.UsingAzureServiceBus((context, cfg) =>
         {
             cfg.Host(builder.Configuration["ServiceBus:ConnectionString"]);
+            
+            cfg.ReceiveEndpoint("user-registered-event", e =>
+            {
+                e.ConfigureConsumer<UserRegisteredConsumer>(context);
+            });
+
+            cfg.ReceiveEndpoint("job-applied-event-notification", e =>
+            {
+                e.ConfigureConsumer<JobAppliedConsumer>(context);
+            });
+
+            cfg.ReceiveEndpoint("application-status-updated-event-notification", e =>
+            {
+                e.ConfigureConsumer<ApplicationStatusUpdatedConsumer>(context);
+            });
+
             cfg.ConfigureEndpoints(context);
         });
     }
