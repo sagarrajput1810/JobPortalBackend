@@ -41,8 +41,15 @@ namespace JobPortal.NotificationService.Consumers
                 RelatedUrl = $"/candidate/applications"
             };
 
-            _dbContext.UserNotifications.Add(notification);
-            await _dbContext.SaveChangesAsync();
+            try
+            {
+                _dbContext.UserNotifications.Add(notification);
+                await _dbContext.SaveChangesAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Email sent, but failed to save job-applied notification for {Email}", msg.CandidateEmail);
+            }
         }
     }
 }

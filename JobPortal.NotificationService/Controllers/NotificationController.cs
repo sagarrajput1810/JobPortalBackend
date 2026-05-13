@@ -13,10 +13,12 @@ namespace JobPortal.NotificationService.Controllers;
 public class NotificationController : ControllerBase
 {
     private readonly NotificationDbContext _context;
+    private readonly ILogger<NotificationController> _logger;
 
-    public NotificationController(NotificationDbContext context)
+    public NotificationController(NotificationDbContext context, ILogger<NotificationController> logger)
     {
         _context = context;
+        _logger = logger;
     }
 
     [HttpGet]
@@ -25,13 +27,21 @@ public class NotificationController : ControllerBase
         var userEmail = User.FindFirstValue(ClaimTypes.Email);
         if (string.IsNullOrEmpty(userEmail)) return Unauthorized();
 
-        var notifications = await _context.UserNotifications
-            .Where(n => n.UserEmail == userEmail)
-            .OrderByDescending(n => n.CreatedAt)
-            .Take(20)
-            .ToListAsync();
+        try
+        {
+            var notifications = await _context.UserNotifications
+                .Where(n => n.UserEmail == userEmail)
+                .OrderByDescending(n => n.CreatedAt)
+                .Take(20)
+                .ToListAsync();
 
-        return Ok(notifications);
+            return Ok(notifications);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to load notifications for {Email}", userEmail);
+            return Ok(Array.Empty<UserNotification>());
+        }
     }
 
     [HttpGet("unread-count")]
@@ -40,10 +50,18 @@ public class NotificationController : ControllerBase
         var userEmail = User.FindFirstValue(ClaimTypes.Email);
         if (string.IsNullOrEmpty(userEmail)) return Unauthorized();
 
-        var count = await _context.UserNotifications
-            .CountAsync(n => n.UserEmail == userEmail && !n.IsRead);
+        try
+        {
+            var count = await _context.UserNotifications
+                .CountAsync(n => n.UserEmail == userEmail && !n.IsRead);
 
-        return Ok(new { count });
+            return Ok(new { count });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to load unread notification count for {Email}", userEmail);
+            return Ok(new { count = 0 });
+        }
     }
 
     [HttpPut("{id}/read")]

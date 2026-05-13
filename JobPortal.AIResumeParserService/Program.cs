@@ -3,6 +3,7 @@ using JobPortal.AIResumeParserService.Consumers;
 using JobPortal.AIResumeParserService.Services;
 
 var builder = WebApplication.CreateBuilder(args);
+var allowedOrigins = builder.Configuration["AllowedOrigins"];
 
 // Add services to the container.
 builder.Services.AddControllers();
@@ -14,9 +15,17 @@ builder.Services.AddCors(options =>
     options.AddPolicy("AllowAngular",
         policy =>
         {
-            policy.WithOrigins(builder.Configuration["AllowedOrigins"] ?? "*")
-                  .AllowAnyHeader()
-                  .AllowAnyMethod();
+            if (string.IsNullOrWhiteSpace(allowedOrigins) || allowedOrigins == "*")
+            {
+                policy.AllowAnyOrigin();
+            }
+            else
+            {
+                policy.WithOrigins(allowedOrigins.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries));
+            }
+
+            policy.AllowAnyHeader()
+                .AllowAnyMethod();
         });
 });
 
@@ -44,16 +53,21 @@ builder.Services.AddMassTransit(x =>
     }
     else
     {
+        var connString = builder.Configuration["ServiceBus:ConnectionString"];
+        Console.WriteLine($"[AIResumeParserService] Configuring Azure Service Bus. Connection String configured: {!string.IsNullOrWhiteSpace(connString)}");
+
         x.UsingAzureServiceBus((context, cfg) =>
         {
-            cfg.Host(builder.Configuration["ServiceBus:ConnectionString"]);
+            cfg.Host(connString);
+
+            // Azure Service Bus Basic tier does not support topics/subscriptions.
+            cfg.DeployPublishTopology = false;
             
             cfg.ReceiveEndpoint("job-applied-event-ai", e =>
             {
+                e.ConfigureConsumeTopology = false;
                 e.ConfigureConsumer<JobAppliedConsumer>(context);
             });
-
-            cfg.ConfigureEndpoints(context);
         });
     }
 });

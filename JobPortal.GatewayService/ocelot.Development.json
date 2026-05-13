@@ -109,6 +109,18 @@
       "UpstreamHttpMethod": [ "Get", "Post", "Put", "Delete" ]
     },
     {
+      "DownstreamPathTemplate": "/uploads/{everything}",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "localhost",
+          "Port": 5243
+        }
+      ],
+      "UpstreamPathTemplate": "/gateway/uploads/{everything}",
+      "UpstreamHttpMethod": [ "Get" ]
+    },
+    {
       "DownstreamPathTemplate": "/api/Notification/{everything}",
       "DownstreamScheme": "http",
       "DownstreamHostAndPorts": [

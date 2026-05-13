@@ -9,6 +9,9 @@ using Microsoft.AspNetCore.RateLimiting;
 using System.Threading.RateLimiting;
 
 var builder = WebApplication.CreateBuilder(args);
+var allowedOrigins = builder.Configuration["AllowedOrigins"];
+var jwtKey = builder.Configuration["Jwt:Key"] 
+    ?? throw new InvalidOperationException("Jwt:Key configuration is missing.");
 
 // Add services to the container
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
@@ -49,9 +52,17 @@ builder.Services.AddCors(options =>
     options.AddPolicy("AllowAngular",
         policy =>
         {
-            policy.WithOrigins(builder.Configuration["AllowedOrigins"])
-                  .AllowAnyHeader()
-                  .AllowAnyMethod();
+            if (string.IsNullOrWhiteSpace(allowedOrigins) || allowedOrigins == "*")
+            {
+                policy.AllowAnyOrigin();
+            }
+            else
+            {
+                policy.WithOrigins(allowedOrigins.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries));
+            }
+
+            policy.AllowAnyHeader()
+                .AllowAnyMethod();
         });
 });
 
@@ -73,7 +84,7 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJw
             ValidIssuer = builder.Configuration["Jwt:Issuer"],
             ValidAudience = builder.Configuration["Jwt:Audience"],
             IssuerSigningKey = new SymmetricSecurityKey(
-                Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"] ?? "")
+                Encoding.UTF8.GetBytes(jwtKey)
             )
         };
 });
@@ -94,9 +105,12 @@ builder.Services.AddMassTransit(x =>
     }
     else
     {
+        var connString = builder.Configuration["ServiceBus:ConnectionString"];
+        Console.WriteLine($"[AuthService] Configuring Azure Service Bus. Connection String configured: {!string.IsNullOrWhiteSpace(connString)}");
+
         x.UsingAzureServiceBus((context, cfg) =>
         {
-            cfg.Host(builder.Configuration["ServiceBus:ConnectionString"]);
+            cfg.Host(connString);
             
             // For Basic Tier: Disable topic creation
             cfg.DeployPublishTopology = false;

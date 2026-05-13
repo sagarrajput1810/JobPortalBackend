@@ -1,0 +1,12 @@
+﻿C:\Users\asus\Documents\JobPortal\JobPortalBackend\JobPortal.IntegrationTests\JobServiceTests.cs
+C:\Users\asus\Documents\JobPortal\JobPortalBackend\JobPortal.IntegrationTests\SharedDatabaseFixture.cs
+C:\Users\asus\Documents\JobPortal\JobPortalBackend\JobPortal.IntegrationTests\UnitTest1.cs
+C:\Windows\system32\config\systemprofile\.nuget\packages\microsoft.net.test.sdk\17.14.1\build\net8.0\Microsoft.NET.Test.Sdk.Program.cs
+C:\Windows\system32\config\systemprofile\.nuget\packages\microsoft.testplatform.testhost\17.14.1\build\net8.0\x64\testhost.exe
+C:\Windows\system32\config\systemprofile\.nuget\packages\microsoft.testplatform.testhost\17.14.1\build\net8.0\x64\testhost.dll
+C:\Windows\system32\config\systemprofile\.nuget\packages\xunit.runner.visualstudio\3.1.4\build\net8.0\xunit.abstractions.dll
+C:\Windows\system32\config\systemprofile\.nuget\packages\xunit.runner.visualstudio\3.1.4\build\net8.0\xunit.runner.visualstudio.testadapter.dll
+C:\Users\asus\Documents\JobPortal\JobPortalBackend\JobPortal.IntegrationTests\TestResults\035b9def-9090-47ed-83b8-a719257f432b\coverage.opencover.xml
+C:\Users\asus\Documents\JobPortal\JobPortalBackend\JobPortal.IntegrationTests\TestResults\6aa8f252-5417-4f16-916b-e0e8bc7cea32\coverage.opencover.xml
+C:\Users\asus\Documents\JobPortal\JobPortalBackend\JobPortal.IntegrationTests\TestResults\9a568e1c-cf99-4db3-bbc3-8785a0140b08\coverage.opencover.xml
+C:\Users\asus\Documents\JobPortal\JobPortalBackend\JobPortal.IntegrationTests\TestResults\a6da3959-9db7-4f00-9fb8-39cf114f3cb9\coverage.opencover.xml

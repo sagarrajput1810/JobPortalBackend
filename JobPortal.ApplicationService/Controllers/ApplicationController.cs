@@ -12,17 +12,28 @@ namespace JobPortal.ApplicationService.Controllers
     {
         private readonly IApplicationService _applicationService;
         private readonly IFileService _fileService;
+        private readonly ILogger<ApplicationController> _logger;
 
-        public ApplicationController(IApplicationService applicationService, IFileService fileService)
+        public ApplicationController(
+            IApplicationService applicationService,
+            IFileService fileService,
+            ILogger<ApplicationController> logger)
         {
             _applicationService = applicationService;
             _fileService = fileService;
+            _logger = logger;
         }
 
         [HttpPost("apply")]
         [Authorize]
         [Consumes("multipart/form-data")] // Specify multipart form data
-        public async Task<IActionResult> Apply([FromForm] int jobId, [FromForm] string? coverLetter, [FromForm] IFormFile resume)
+        [RequestSizeLimit(25 * 1024 * 1024)]
+        public async Task<IActionResult> Apply(
+            [FromForm] int jobId,
+            [FromForm] string? jobTitle,
+            [FromForm] string? companyName,
+            [FromForm] string? coverLetter,
+            [FromForm] IFormFile resume)
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             var userName = User.FindFirstValue(ClaimTypes.Name);
@@ -41,6 +52,8 @@ namespace JobPortal.ApplicationService.Controllers
                 var applicationDto = new JobApplicationCreateDto
                 {
                     JobId = jobId,
+                    JobTitle = jobTitle ?? string.Empty,
+                    CompanyName = companyName ?? string.Empty,
                     CoverLetter = coverLetter,
                     ResumeUrl = resumeUrl // Relative URL saved in DB
                 };
@@ -50,6 +63,7 @@ namespace JobPortal.ApplicationService.Controllers
             }
             catch (Exception ex)
             {
+                _logger.LogError(ex, "Failed to apply for job {JobId} as user {UserId}", jobId, userId);
                 return BadRequest(ex.Message);
             }
         }
@@ -57,8 +71,16 @@ namespace JobPortal.ApplicationService.Controllers
         [HttpGet("job/{jobId}")]
         public async Task<IActionResult> GetApplicationsByJob(int jobId)
         {
-            var results = await _applicationService.GetApplicationsByJobIdAsync(jobId);
-            return Ok(results);
+            try
+            {
+                var results = await _applicationService.GetApplicationsByJobIdAsync(jobId);
+                return Ok(results);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to load applications for job {JobId}", jobId);
+                return Ok(Array.Empty<JobApplicationResponseDto>());
+            }
         }
 
         [HttpGet("my-applications")]
@@ -68,8 +90,16 @@ namespace JobPortal.ApplicationService.Controllers
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             if (string.IsNullOrEmpty(userId)) return Unauthorized();
 
-            var results = await _applicationService.GetApplicationsByCandidateIdAsync(userId);
-            return Ok(results);
+            try
+            {
+                var results = await _applicationService.GetApplicationsByCandidateIdAsync(userId);
+                return Ok(results);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to load applications for candidate {CandidateId}", userId);
+                return Ok(Array.Empty<JobApplicationResponseDto>());
+            }
         }
 
         [HttpPut("{id}/status")]

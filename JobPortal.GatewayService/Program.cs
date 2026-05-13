@@ -2,6 +2,7 @@ using Ocelot.DependencyInjection;
 using Ocelot.Middleware;
 
 var builder = WebApplication.CreateBuilder(args);
+var allowedOrigins = builder.Configuration["AllowedOrigins"];
 
 // Add CORS policy
 builder.Services.AddCors(options =>
@@ -9,9 +10,17 @@ builder.Services.AddCors(options =>
     options.AddPolicy("AllowAngular",
         policy =>
         {
-            policy.WithOrigins(builder.Configuration["AllowedOrigins"])
-                  .AllowAnyHeader()
-                  .AllowAnyMethod();
+            if (string.IsNullOrWhiteSpace(allowedOrigins) || allowedOrigins == "*")
+            {
+                policy.AllowAnyOrigin();
+            }
+            else
+            {
+                policy.WithOrigins(allowedOrigins.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries));
+            }
+
+            policy.AllowAnyHeader()
+                .AllowAnyMethod();
         });
 });
 

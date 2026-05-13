@@ -7,6 +7,9 @@ using Microsoft.IdentityModel.Tokens;
 using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
+var allowedOrigins = builder.Configuration["AllowedOrigins"];
+var jwtKey = builder.Configuration["Jwt:Key"] 
+    ?? throw new InvalidOperationException("Jwt:Key configuration is missing.");
 
 // Add services to the container.
 builder.Services.AddControllers();
@@ -17,15 +20,29 @@ builder.Services.AddCors(options =>
     options.AddPolicy("AllowAngular",
         policy =>
         {
-            policy.WithOrigins(builder.Configuration["AllowedOrigins"] ?? "*")
-                  .AllowAnyHeader()
-                  .AllowAnyMethod();
+            if (string.IsNullOrWhiteSpace(allowedOrigins) || allowedOrigins == "*")
+            {
+                policy.AllowAnyOrigin();
+            }
+            else
+            {
+                policy.WithOrigins(allowedOrigins.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries));
+            }
+
+            policy.AllowAnyHeader()
+                .AllowAnyMethod();
         });
 });
 
 // Register DB Context
 builder.Services.AddDbContext<JobDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"), sqlOptions =>
+    {
+        sqlOptions.EnableRetryOnFailure(
+            maxRetryCount: 5,
+            maxRetryDelay: TimeSpan.FromSeconds(30),
+            errorNumbersToAdd: null);
+    }));
 
 // Register Business Services
 builder.Services.AddScoped<IJobService, JobService>();
@@ -46,9 +63,13 @@ builder.Services.AddMassTransit(x =>
     }
     else
     {
+        var connString = builder.Configuration["ServiceBus:ConnectionString"];
+        Console.WriteLine($"[JobService] Configuring Azure Service Bus. Connection String configured: {!string.IsNullOrWhiteSpace(connString)}");
+
         x.UsingAzureServiceBus((context, cfg) =>
         {
-            cfg.Host(builder.Configuration["ServiceBus:ConnectionString"]);
+            cfg.Host(connString);
+            cfg.DeployPublishTopology = false;
             cfg.ConfigureEndpoints(context);
         });
     }
@@ -67,7 +88,7 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJw
             ValidIssuer = builder.Configuration["Jwt:Issuer"],
             ValidAudience = builder.Configuration["Jwt:Audience"],
             IssuerSigningKey = new SymmetricSecurityKey(
-                Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"])
+                Encoding.UTF8.GetBytes(jwtKey)
             )
         };
     });
@@ -79,6 +100,21 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
+
+using (var scope = app.Services.CreateScope())
+{
+    var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
+    try
+    {
+        var dbContext = scope.ServiceProvider.GetRequiredService<JobDbContext>();
+        dbContext.Database.Migrate();
+        logger.LogInformation("Job database migrations applied.");
+    }
+    catch (Exception ex)
+    {
+        logger.LogError(ex, "Failed to apply job database migrations.");
+    }
+}
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())

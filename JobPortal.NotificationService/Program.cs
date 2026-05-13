@@ -2,12 +2,16 @@ using MassTransit;
 using JobPortal.NotificationService.Consumers;
 using JobPortal.NotificationService.Services;
 using JobPortal.NotificationService.Data;
+using JobPortal.Shared.Events;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
+var allowedOrigins = builder.Configuration["AllowedOrigins"];
+var jwtKey = builder.Configuration["Jwt:Key"] 
+    ?? throw new InvalidOperationException("Jwt:Key configuration is missing.");
 
 // Add services to the container.
 builder.Logging.SetMinimumLevel(LogLevel.Debug);
@@ -17,7 +21,13 @@ builder.Services.AddSwaggerGen();
 
 // Add DbContext
 builder.Services.AddDbContext<NotificationDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"), sqlOptions =>
+    {
+        sqlOptions.EnableRetryOnFailure(
+            maxRetryCount: 5,
+            maxRetryDelay: TimeSpan.FromSeconds(30),
+            errorNumbersToAdd: null);
+    }));
 
 // Token validation mechanism
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
@@ -32,7 +42,7 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             ValidIssuer = builder.Configuration["Jwt:Issuer"],
             ValidAudience = builder.Configuration["Jwt:Audience"],
             IssuerSigningKey = new SymmetricSecurityKey(
-                Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"])
+                Encoding.UTF8.GetBytes(jwtKey)
             )
         };
     });
@@ -45,9 +55,17 @@ builder.Services.AddCors(options =>
     options.AddPolicy("AllowAngular",
         policy =>
         {
-            policy.WithOrigins(builder.Configuration["AllowedOrigins"] ?? "*")
-                  .AllowAnyHeader()
-                  .AllowAnyMethod();
+            if (string.IsNullOrWhiteSpace(allowedOrigins) || allowedOrigins == "*")
+            {
+                policy.AllowAnyOrigin();
+            }
+            else
+            {
+                policy.WithOrigins(allowedOrigins.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries));
+            }
+
+            policy.AllowAnyHeader()
+                .AllowAnyMethod();
         });
 });
 
@@ -88,21 +106,19 @@ builder.Services.AddMassTransit(x =>
 
             cfg.ReceiveEndpoint("user-registered-event", e =>
             {
-                e.Handler<UserRegisteredEvent>(context => 
-                {
-                    Console.WriteLine($"[NotificationService] RAW HANDLER received event for: {context.Message.Email}");
-                    return Task.CompletedTask;
-                });
+                e.ConfigureConsumeTopology = false;
                 e.ConfigureConsumer<UserRegisteredConsumer>(context);
             });
 
             cfg.ReceiveEndpoint("job-applied-event-notification", e =>
             {
+                e.ConfigureConsumeTopology = false;
                 e.ConfigureConsumer<JobAppliedConsumer>(context);
             });
 
             cfg.ReceiveEndpoint("application-status-updated-event-notification", e =>
             {
+                e.ConfigureConsumeTopology = false;
                 e.ConfigureConsumer<ApplicationStatusUpdatedConsumer>(context);
             });
 
@@ -114,6 +130,21 @@ builder.Services.AddMassTransit(x =>
 var app = builder.Build();
 
 Console.WriteLine("[NotificationService] Application Build complete. Starting app...");
+
+using (var scope = app.Services.CreateScope())
+{
+    var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
+    try
+    {
+        var dbContext = scope.ServiceProvider.GetRequiredService<NotificationDbContext>();
+        dbContext.Database.Migrate();
+        logger.LogInformation("Notification database migrations applied.");
+    }
+    catch (Exception ex)
+    {
+        logger.LogError(ex, "Failed to apply notification database migrations.");
+    }
+}
 
 if (app.Environment.IsDevelopment())
 {

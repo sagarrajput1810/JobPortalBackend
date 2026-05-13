@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using JobPortal.SearchService.Data;
 
 var builder = WebApplication.CreateBuilder(args);
+var allowedOrigins = builder.Configuration["AllowedOrigins"];
 
 // Add services to the container.
 builder.Services.AddControllers();
@@ -20,9 +21,17 @@ builder.Services.AddCors(options =>
     options.AddPolicy("AllowAngular",
         policy =>
         {
-            policy.WithOrigins(builder.Configuration["AllowedOrigins"] ?? "*")
-                  .AllowAnyHeader()
-                  .AllowAnyMethod();
+            if (string.IsNullOrWhiteSpace(allowedOrigins) || allowedOrigins == "*")
+            {
+                policy.AllowAnyOrigin();
+            }
+            else
+            {
+                policy.WithOrigins(allowedOrigins.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries));
+            }
+
+            policy.AllowAnyHeader()
+                .AllowAnyMethod();
         });
 });
 
@@ -45,26 +54,33 @@ builder.Services.AddMassTransit(x =>
     }
     else
     {
+        var connString = builder.Configuration["ServiceBus:ConnectionString"];
+        Console.WriteLine($"[SearchService] Configuring Azure Service Bus. Connection String configured: {!string.IsNullOrWhiteSpace(connString)}");
+
         x.UsingAzureServiceBus((context, cfg) =>
         {
-            cfg.Host(builder.Configuration["ServiceBus:ConnectionString"]);
+            cfg.Host(connString);
+
+            // Azure Service Bus Basic tier does not support topics/subscriptions.
+            cfg.DeployPublishTopology = false;
             
             cfg.ReceiveEndpoint("job-created-event-search", e =>
             {
+                e.ConfigureConsumeTopology = false;
                 e.ConfigureConsumer<JobPortal.SearchService.Consumers.JobEventsConsumer>(context);
             });
 
             cfg.ReceiveEndpoint("job-updated-event-search", e =>
             {
+                e.ConfigureConsumeTopology = false;
                 e.ConfigureConsumer<JobPortal.SearchService.Consumers.JobEventsConsumer>(context);
             });
 
             cfg.ReceiveEndpoint("job-deleted-event-search", e =>
             {
+                e.ConfigureConsumeTopology = false;
                 e.ConfigureConsumer<JobPortal.SearchService.Consumers.JobEventsConsumer>(context);
             });
-
-            cfg.ConfigureEndpoints(context);
         });
     }
 });

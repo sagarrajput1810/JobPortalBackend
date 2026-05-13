@@ -17,12 +17,18 @@ public class AuthServices : IAuthServices
     private readonly ApplicationDbContext _context;
     private readonly IConfiguration _config;
     private readonly ISendEndpointProvider _sendEndpointProvider;
+    private readonly ILogger<AuthServices> _logger;
 
-    public AuthServices(ApplicationDbContext context, IConfiguration config, ISendEndpointProvider sendEndpointProvider)
+    public AuthServices(
+        ApplicationDbContext context,
+        IConfiguration config,
+        ISendEndpointProvider sendEndpointProvider,
+        ILogger<AuthServices> logger)
     {
         _context = context;
         _config = config;
         _sendEndpointProvider = sendEndpointProvider;
+        _logger = logger;
     }
 
     public async Task<GoogleLoginResponse?> LoginWithGoogleAsync(string idToken, string? role = null)
@@ -102,17 +108,7 @@ public class AuthServices : IAuthServices
                 
                 Console.WriteLine($"[AuthService] Data saved for existing user: {existingUser.Email}. Sending OTP...");
                 
-                try 
-                {
-                    var endpoint = await _sendEndpointProvider.GetSendEndpoint(new Uri("queue:user-registered-event"));
-                    await endpoint.Send(new UserRegisteredEvent(existingUser.Id, existingUser.Email, existingUser.FullName, existingUser.Role, existingUser.VerificationOtp));
-                    Console.WriteLine("[AuthService] OTP sent successfully to queue.");
-                }
-                catch (Exception ex)
-                {
-                    Console.WriteLine($"[AuthService] Error sending to Service Bus: {ex.Message}");
-                    // Don't throw, let the user know data was saved
-                }
+                await SendOtpEventAsync(existingUser.Id, existingUser.Email, existingUser.FullName, existingUser.Role, existingUser.VerificationOtp);
                 
                 throw new Exception("Email is already registered but not verified. A new OTP has been sent to your email.");
             }
@@ -137,18 +133,26 @@ public class AuthServices : IAuthServices
         
         Console.WriteLine($"[AuthService] New user saved: {newUser.Email}. Sending OTP...");
 
-        try 
+        await SendOtpEventAsync(newUser.Id, newUser.Email, newUser.FullName, newUser.Role, otp);
+
+        return true;
+    }
+
+    private async Task SendOtpEventAsync(Guid userId, string email, string fullName, string role, string otp)
+    {
+        var endpointUri = new Uri("queue:user-registered-event");
+        try
         {
-            var sendEndpoint = await _sendEndpointProvider.GetSendEndpoint(new Uri("queue:user-registered-event"));
-            await sendEndpoint.Send(new UserRegisteredEvent(newUser.Id, newUser.Email, newUser.FullName, newUser.Role, otp));
-            Console.WriteLine("[AuthService] OTP sent successfully for new user.");
+            _logger.LogInformation("Sending UserRegisteredEvent to {Endpoint} for {Email}", endpointUri, email);
+            var endpoint = await _sendEndpointProvider.GetSendEndpoint(endpointUri);
+            await endpoint.Send(new UserRegisteredEvent(userId, email, fullName, role, otp));
+            _logger.LogInformation("UserRegisteredEvent sent to {Endpoint} for {Email}", endpointUri, email);
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"[AuthService] Error sending to Service Bus: {ex.Message}");
+            _logger.LogError(ex, "Failed to send UserRegisteredEvent to {Endpoint} for {Email}", endpointUri, email);
+            throw new Exception("Registration saved, but OTP could not be queued. Please try again later.");
         }
-
-        return true;
     }
 
     public async Task<string?> LoginAsync(string email, string password)
@@ -184,7 +188,8 @@ public class AuthServices : IAuthServices
 
     private string GenerateToken(UserCredential user)
     {
-        var keyStr = _config["Jwt:Key"] ?? "default_secret_key_at_least_32_chars_long";
+        var keyStr = _config["Jwt:Key"] 
+            ?? throw new InvalidOperationException("Jwt:Key configuration is missing.");
         var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(keyStr));
         var credentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256);
 

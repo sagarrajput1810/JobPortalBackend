@@ -145,6 +145,28 @@
       "HttpHandlerOptions": {
         "AllowAutoRedirect": true,
         "DangerousAcceptAnyServerCertificateValidator": true
+      },
+      "QoSOptions": {
+        "TimeoutValue": 120000
+      }
+    },
+    {
+      "DownstreamPathTemplate": "/uploads/{everything}",
+      "DownstreamScheme": "https",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "application-service.internal.victorioussmoke-d03cd650.centralindia.azurecontainerapps.io",
+          "Port": 443
+        }
+      ],
+      "UpstreamPathTemplate": "/gateway/uploads/{everything}",
+      "UpstreamHttpMethod": [ "Get" ],
+      "HttpHandlerOptions": {
+        "AllowAutoRedirect": true,
+        "DangerousAcceptAnyServerCertificateValidator": true
+      },
+      "QoSOptions": {
+        "TimeoutValue": 120000
       }
     },
     {

@@ -21,7 +21,10 @@ namespace JobPortal.ApplicationService.Services
 
         public async Task<string> SaveFileAsync(IFormFile file, string subFolder)
         {
-            if (file == null || file.Length == 0) return null;
+            if (file == null || file.Length == 0)
+            {
+                throw new ArgumentException("File is required.", nameof(file));
+            }
 
             // Folder path set karein (e.g., wwwroot/uploads/resumes)
             string uploadFolder = Path.Combine(_contentRootPath, "wwwroot", "uploads", subFolder);

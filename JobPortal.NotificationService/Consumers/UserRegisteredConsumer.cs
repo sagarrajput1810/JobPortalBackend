@@ -48,8 +48,15 @@ namespace JobPortal.NotificationService.Consumers
                 IsRead = false
             };
 
-            _dbContext.UserNotifications.Add(notification);
-            await _dbContext.SaveChangesAsync();
+            try
+            {
+                _dbContext.UserNotifications.Add(notification);
+                await _dbContext.SaveChangesAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Email sent, but failed to save registration notification for {Email}", userEvent.Email);
+            }
         }
     }
 }

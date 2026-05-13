@@ -39,7 +39,12 @@ namespace JobPortal.NotificationService.Services
                 var user = _config["EmailSettings:Username"] ?? "";
                 var pass = _config["EmailSettings:Password"] ?? "";
 
-                _logger.LogInformation($"Connecting to SMTP server {host}:{port}...");
+                _logger.LogInformation(
+                    "Connecting to SMTP server {Host}:{Port}. Username configured: {HasUsername}. Password configured: {HasPassword}",
+                    host,
+                    port,
+                    !string.IsNullOrWhiteSpace(user),
+                    !string.IsNullOrWhiteSpace(pass));
                 
                 // Bypass certificate validation if necessary (common in some environments)
                 smtp.ServerCertificateValidationCallback = (s, c, h, e) => true;
@@ -55,7 +60,7 @@ namespace JobPortal.NotificationService.Services
             }
             catch (Exception ex)
             {
-                _logger.LogError($"Failed to send email to {to}: {ex.Message}");
+                _logger.LogError(ex, "Failed to send email to {Email}", to);
                 throw; // Re-throw to allow MassTransit to retry
             }
             finally

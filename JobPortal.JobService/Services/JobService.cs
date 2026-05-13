@@ -11,11 +11,14 @@ namespace JobPortal.JobService.Services
     {
         private readonly JobDbContext _context;
         private readonly ISendEndpointProvider _sendEndpointProvider;
+        private readonly ILogger<JobService> _logger;
+        private static readonly TimeSpan EventSendTimeout = TimeSpan.FromSeconds(5);
 
-        public JobService(JobDbContext context, ISendEndpointProvider sendEndpointProvider)
+        public JobService(JobDbContext context, ISendEndpointProvider sendEndpointProvider, ILogger<JobService> logger)
         {
             _context = context;
             _sendEndpointProvider = sendEndpointProvider;
+            _logger = logger;
         }
 
         public async Task<IEnumerable<JobResponseDto>> GetAllJobsAsync()
@@ -47,9 +50,7 @@ namespace JobPortal.JobService.Services
             _context.JobPostings.Add(job);
             await _context.SaveChangesAsync();
 
-            // Send to Search Service Queue
-            var searchEndpoint = await _sendEndpointProvider.GetSendEndpoint(new Uri("queue:job-created-event-search"));
-            await searchEndpoint.Send(new JobCreatedEvent(
+            await TrySendSearchEventAsync(new Uri("queue:job-created-event-search"), new JobCreatedEvent(
                 job.Id,
                 job.Title,
                 job.Description,
@@ -76,9 +77,7 @@ namespace JobPortal.JobService.Services
 
             await _context.SaveChangesAsync();
 
-            // Send to Search Service Queue
-            var searchEndpoint = await _sendEndpointProvider.GetSendEndpoint(new Uri("queue:job-updated-event-search"));
-            await searchEndpoint.Send(new JobUpdatedEvent(
+            await TrySendSearchEventAsync(new Uri("queue:job-updated-event-search"), new JobUpdatedEvent(
                 job.Id,
                 job.Title,
                 job.Description,
@@ -100,9 +99,7 @@ namespace JobPortal.JobService.Services
             job.IsActive = false;
             await _context.SaveChangesAsync();
 
-            // Send to Search Service Queue
-            var searchEndpoint = await _sendEndpointProvider.GetSendEndpoint(new Uri("queue:job-deleted-event-search"));
-            await searchEndpoint.Send(new JobDeletedEvent(job.Id));
+            await TrySendSearchEventAsync(new Uri("queue:job-deleted-event-search"), new JobDeletedEvent(job.Id));
 
             return true;
         }
@@ -129,6 +126,19 @@ namespace JobPortal.JobService.Services
                 CreatedAt = job.CreatedAt,
                 IsActive = job.IsActive
             };
+        }
+
+        private async Task TrySendSearchEventAsync<T>(Uri endpointUri, T message) where T : class
+        {
+            try
+            {
+                var searchEndpoint = await _sendEndpointProvider.GetSendEndpoint(endpointUri).WaitAsync(EventSendTimeout);
+                await searchEndpoint.Send(message).WaitAsync(EventSendTimeout);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Job saved, but failed to send search event to {Endpoint}", endpointUri);
+            }
         }
     }
 }

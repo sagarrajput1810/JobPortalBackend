@@ -11,11 +11,17 @@ namespace JobPortal.ApplicationService.Services
     {
         private readonly ApplicationDbContext _context;
         private readonly ISendEndpointProvider _sendEndpointProvider;
+        private readonly ILogger<ApplicationService> _logger;
+        private static readonly TimeSpan EventSendTimeout = TimeSpan.FromSeconds(5);
 
-        public ApplicationService(ApplicationDbContext context, ISendEndpointProvider sendEndpointProvider)
+        public ApplicationService(
+            ApplicationDbContext context,
+            ISendEndpointProvider sendEndpointProvider,
+            ILogger<ApplicationService> logger)
         {
             _context = context;
             _sendEndpointProvider = sendEndpointProvider;
+            _logger = logger;
         }
 
         public async Task<JobApplicationResponseDto> ApplyForJobAsync(JobApplicationCreateDto applicationDto, string candidateId, string candidateName, string candidateEmail)
@@ -56,13 +62,8 @@ namespace JobPortal.ApplicationService.Services
                 application.CompanyName
             );
 
-            // Send to Notification Queue
-            var notificationEndpoint = await _sendEndpointProvider.GetSendEndpoint(new Uri("queue:job-applied-event-notification"));
-            await notificationEndpoint.Send(appEvent);
-
-            // Send to AI Parser Queue
-            var aiEndpoint = await _sendEndpointProvider.GetSendEndpoint(new Uri("queue:job-applied-event-ai"));
-            await aiEndpoint.Send(appEvent);
+            await TrySendEventAsync(new Uri("queue:job-applied-event-notification"), appEvent);
+            await TrySendEventAsync(new Uri("queue:job-applied-event-ai"), appEvent);
 
             return MapToDto(application);
         }
@@ -91,9 +92,7 @@ namespace JobPortal.ApplicationService.Services
             application.Status = status;
             await _context.SaveChangesAsync();
 
-            // Send to Notification Queue
-            var notificationEndpoint = await _sendEndpointProvider.GetSendEndpoint(new Uri("queue:application-status-updated-event-notification"));
-            await notificationEndpoint.Send(new ApplicationStatusUpdatedEvent(
+            await TrySendEventAsync(new Uri("queue:application-status-updated-event-notification"), new ApplicationStatusUpdatedEvent(
                 application.Id,
                 application.CandidateEmail,
                 "Your Application", 
@@ -127,6 +126,19 @@ namespace JobPortal.ApplicationService.Services
                 AtsScore = application.AtsScore,
                 AiSummary = application.AiSummary
             };
+        }
+
+        private async Task TrySendEventAsync<T>(Uri endpointUri, T message) where T : class
+        {
+            try
+            {
+                var endpoint = await _sendEndpointProvider.GetSendEndpoint(endpointUri).WaitAsync(EventSendTimeout);
+                await endpoint.Send(message).WaitAsync(EventSendTimeout);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Application saved, but failed to send event to {Endpoint}", endpointUri);
+            }
         }
     }
 }
