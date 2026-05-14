@@ -2,6 +2,7 @@ using JobPortal.ApplicationService.DTOs;
 using JobPortal.ApplicationService.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.Diagnostics.CodeAnalysis;
 using System.Security.Claims;
 
 namespace JobPortal.ApplicationService.Controllers
@@ -13,6 +14,7 @@ namespace JobPortal.ApplicationService.Controllers
         private readonly IApplicationService _applicationService;
         private readonly IFileService _fileService;
         private readonly ILogger<ApplicationController> _logger;
+        private const int MaxResumeUploadSizeBytes = 25 * 1024 * 1024;
 
         public ApplicationController(
             IApplicationService applicationService,
@@ -27,7 +29,9 @@ namespace JobPortal.ApplicationService.Controllers
         [HttpPost("apply")]
         [Authorize]
         [Consumes("multipart/form-data")] // Specify multipart form data
-        [RequestSizeLimit(25 * 1024 * 1024)]
+        [RequestSizeLimit(MaxResumeUploadSizeBytes)]
+        [RequestFormLimits(MultipartBodyLengthLimit = MaxResumeUploadSizeBytes)]
+        [SuppressMessage("Security", "S5693:Make sure the content length limit is safe here", Justification = "Resume uploads are limited to 25 MB to allow PDF/DOC resumes while preventing oversized multipart requests.")]
         public async Task<IActionResult> Apply(
             [FromForm] int jobId,
             [FromForm] string? jobTitle,
@@ -107,7 +111,7 @@ namespace JobPortal.ApplicationService.Controllers
         public async Task<IActionResult> UpdateStatus(int id, [FromBody] JobApplicationStatusUpdateDto statusDto)
         {
             var success = await _applicationService.UpdateApplicationStatusAsync(id, statusDto.Status);
-            return success ? Ok("Status updated") : NotFound();
+            return success ? NoContent() : NotFound();
         }
     }
 }

@@ -10,8 +10,11 @@ using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 var allowedOrigins = builder.Configuration["AllowedOrigins"];
-var jwtKey = builder.Configuration["Jwt:Key"] 
-    ?? throw new InvalidOperationException("Jwt:Key configuration is missing.");
+var jwtKey = builder.Configuration["Jwt:Key"];
+if (string.IsNullOrWhiteSpace(jwtKey))
+{
+    throw new InvalidOperationException("Jwt:Key configuration is missing.");
+}
 
 // Add services to the container.
 builder.Logging.SetMinimumLevel(LogLevel.Debug);
@@ -88,7 +91,21 @@ builder.Services.AddMassTransit(x =>
                 h.Username(builder.Configuration["RabbitMq:User"] ?? "guest");
                 h.Password(builder.Configuration["RabbitMq:Pass"] ?? "guest");
             });
-            cfg.ConfigureEndpoints(context);
+
+            cfg.ReceiveEndpoint("user-registered-event", e =>
+            {
+                e.ConfigureConsumer<UserRegisteredConsumer>(context);
+            });
+
+            cfg.ReceiveEndpoint("job-applied-event-notification", e =>
+            {
+                e.ConfigureConsumer<JobAppliedConsumer>(context);
+            });
+
+            cfg.ReceiveEndpoint("application-status-updated-event-notification", e =>
+            {
+                e.ConfigureConsumer<ApplicationStatusUpdatedConsumer>(context);
+            });
         });
     }
     else

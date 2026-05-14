@@ -1,6 +1,20 @@
-@JobPortal.NotificationService_HostAddress = http://localhost:5123
+@NotificationService_HostAddress = http://localhost:5123
+@token = your_token_here
 
-GET {{JobPortal.NotificationService_HostAddress}}/weatherforecast/
+### Get All Notifications
+GET {{NotificationService_HostAddress}}/api/notification
+Authorization: Bearer {{token}}
 Accept: application/json
 
-###
+### Get Unread Count
+GET {{NotificationService_HostAddress}}/api/notification/unread-count
+Authorization: Bearer {{token}}
+Accept: application/json
+
+### Mark Notification As Read
+PUT {{NotificationService_HostAddress}}/api/notification/1/read
+Authorization: Bearer {{token}}
+
+### Mark All As Read
+PUT {{NotificationService_HostAddress}}/api/notification/read-all
+Authorization: Bearer {{token}}

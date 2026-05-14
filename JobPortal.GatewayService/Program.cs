@@ -3,6 +3,13 @@ using Ocelot.Middleware;
 using Ocelot.Provider.Polly;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Configure Kestrel to allow up to 50MB for file uploads
+builder.WebHost.ConfigureKestrel(options =>
+{
+    options.Limits.MaxRequestBodySize = 52428800; // 50 MB
+});
+
 var allowedOrigins = builder.Configuration["AllowedOrigins"];
 
 // Add CORS policy

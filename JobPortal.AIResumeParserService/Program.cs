@@ -3,7 +3,8 @@ using JobPortal.AIResumeParserService.Consumers;
 using JobPortal.AIResumeParserService.Services;
 
 var builder = WebApplication.CreateBuilder(args);
-var allowedOrigins = builder.Configuration["AllowedOrigins"];
+var allowedOrigins = (builder.Configuration["AllowedOrigins"] ?? "http://localhost:4200")
+    .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
 
 // Add services to the container.
 builder.Services.AddControllers();
@@ -15,22 +16,17 @@ builder.Services.AddCors(options =>
     options.AddPolicy("AllowAngular",
         policy =>
         {
-            if (string.IsNullOrWhiteSpace(allowedOrigins) || allowedOrigins == "*")
-            {
-                policy.AllowAnyOrigin();
-            }
-            else
-            {
-                policy.WithOrigins(allowedOrigins.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries));
-            }
-
-            policy.AllowAnyHeader()
+            policy.WithOrigins(allowedOrigins)
+                .AllowAnyHeader()
                 .AllowAnyMethod();
         });
 });
 
-// Register HttpClient for API Calls
-builder.Services.AddHttpClient();
+// Register HttpClient for API Calls and ignore internal SSL errors (for ACA networking)
+builder.Services.AddHttpClient().ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler
+{
+    ServerCertificateCustomValidationCallback = (message, cert, chain, errors) => true
+});
 
 // Register Gemini Service
 builder.Services.AddScoped<IGeminiService, GeminiService>();
@@ -48,7 +44,11 @@ builder.Services.AddMassTransit(x =>
                 h.Username(builder.Configuration["RabbitMq:User"] ?? "guest");
                 h.Password(builder.Configuration["RabbitMq:Pass"] ?? "guest");
             });
-            cfg.ConfigureEndpoints(context);
+
+            cfg.ReceiveEndpoint("job-applied-event-ai", e =>
+            {
+                e.ConfigureConsumer<JobAppliedConsumer>(context);
+            });
         });
     }
     else
@@ -84,4 +84,4 @@ app.UseCors("AllowAngular");
 app.UseHttpsRedirection();
 app.MapControllers();
 
-app.Run();
+await app.RunAsync();

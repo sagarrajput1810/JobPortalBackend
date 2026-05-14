@@ -1,1 +1,1 @@
-|RoC:\Users\asus\Documents\JobPortal\JobPortalBackend\JobPortal.IntegrationTests\JobPortal.IntegrationTests.csprojòCSharp14
+†RyC:\Users\asus\Documents\JobPortal\JobPortalBackend\JobPortal.AIResumeParserService\JobPortal.AIResumeParserService.csprojòCSharp14

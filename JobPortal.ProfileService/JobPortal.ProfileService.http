@@ -1,6 +1,79 @@
-@JobPortal.ProfileService_HostAddress = http://localhost:5129
+@ProfileService_HostAddress = http://localhost:5129
 
-GET {{JobPortal.ProfileService_HostAddress}}/weatherforecast/
+### CANDIDATE PROFILES
+
+### Create Candidate Profile
+POST {{ProfileService_HostAddress}}/api/candidate
+Content-Type: application/json
+
+{
+  "userId": "00000000-0000-0000-0000-000000000000",
+  "fullName": "John Doe",
+  "bio": "Passionate Software Engineer",
+  "phoneNumber": "1234567890",
+  "skills": ["C#", ".NET", "Angular"]
+}
+
+### Get All Candidate Profiles
+GET {{ProfileService_HostAddress}}/api/candidate
 Accept: application/json
 
-###
+### Get Candidate Profile By ID
+GET {{ProfileService_HostAddress}}/api/candidate/00000000-0000-0000-0000-000000000000
+Accept: application/json
+
+### Get Candidate Profile By User ID
+GET {{ProfileService_HostAddress}}/api/candidate/user/00000000-0000-0000-0000-000000000000
+Accept: application/json
+
+### Update Candidate Profile
+PUT {{ProfileService_HostAddress}}/api/candidate/00000000-0000-0000-0000-000000000000
+Content-Type: application/json
+
+{
+  "fullName": "John Updated Doe",
+  "bio": "Experienced Software Engineer",
+  "phoneNumber": "0987654321",
+  "skills": ["C#", ".NET", "Angular", "Azure"]
+}
+
+### Delete Candidate Profile
+DELETE {{ProfileService_HostAddress}}/api/candidate/00000000-0000-0000-0000-000000000000
+
+### RECRUITER PROFILES
+
+### Create Recruiter Profile
+POST {{ProfileService_HostAddress}}/api/recruiter
+Content-Type: application/json
+
+{
+  "userId": "00000000-0000-0000-0000-000000000001",
+  "companyName": "Tech Corp",
+  "industry": "Technology",
+  "companyWebsite": "https://techcorp.example.com"
+}
+
+### Get All Recruiter Profiles
+GET {{ProfileService_HostAddress}}/api/recruiter
+Accept: application/json
+
+### Get Recruiter Profile By ID
+GET {{ProfileService_HostAddress}}/api/recruiter/00000000-0000-0000-0000-000000000001
+Accept: application/json
+
+### Get Recruiter Profile By User ID
+GET {{ProfileService_HostAddress}}/api/recruiter/user/00000000-0000-0000-0000-000000000001
+Accept: application/json
+
+### Update Recruiter Profile
+PUT {{ProfileService_HostAddress}}/api/recruiter/00000000-0000-0000-0000-000000000001
+Content-Type: application/json
+
+{
+  "companyName": "Tech Corp Updated",
+  "industry": "Software",
+  "companyWebsite": "https://techcorp-updated.example.com"
+}
+
+### Delete Recruiter Profile
+DELETE {{ProfileService_HostAddress}}/api/recruiter/00000000-0000-0000-0000-000000000001

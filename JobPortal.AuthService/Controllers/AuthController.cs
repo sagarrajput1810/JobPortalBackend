@@ -6,6 +6,8 @@ using JobPortal.Shared.Events;
 using System.Text.Json.Serialization;
 
 using Microsoft.AspNetCore.RateLimiting;
+using Microsoft.AspNetCore.Authorization;
+using System.Security.Claims;
 
 namespace JobPortal.AuthService.Models;
 
@@ -19,6 +21,24 @@ public class AuthController : ControllerBase
     {
         _authService = authService;
         _publishEndpoint = publishEndpoint;
+    }
+
+    [Authorize]
+    [HttpGet("me")]
+    public IActionResult GetCurrentUser()
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        var email = User.FindFirstValue(ClaimTypes.Email);
+        var name = User.FindFirstValue(ClaimTypes.Name);
+        var role = User.FindFirstValue(ClaimTypes.Role);
+
+        return Ok(new
+        {
+            Id = userId,
+            Email = email,
+            Name = name,
+            Role = role
+        });
     }
 
     [HttpPost("register/candidate")]

@@ -32,7 +32,7 @@ namespace JobPortal.ApplicationService.Services
             
             if (existingApplication != null)
             {
-                throw new Exception("You have already applied for this job.");
+                throw new InvalidOperationException("You have already applied for this job.");
             }
 
             var application = new JobApplication
@@ -134,10 +134,11 @@ namespace JobPortal.ApplicationService.Services
             {
                 var endpoint = await _sendEndpointProvider.GetSendEndpoint(endpointUri).WaitAsync(EventSendTimeout);
                 await endpoint.Send(message).WaitAsync(EventSendTimeout);
+                _logger.LogInformation("Successfully sent event of type {MessageType} to {Endpoint}", typeof(T).Name, endpointUri);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Application saved, but failed to send event to {Endpoint}", endpointUri);
+                _logger.LogError(ex, "Application saved, but failed to send event of type {MessageType} to {Endpoint}", typeof(T).Name, endpointUri);
             }
         }
     }

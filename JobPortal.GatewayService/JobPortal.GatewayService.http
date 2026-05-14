@@ -1,6 +1,50 @@
-@JobPortal.GatewayService_HostAddress = http://localhost:5046
+@GatewayService_HostAddress = http://localhost:5046
+@token = your_token_here
 
-GET {{JobPortal.GatewayService_HostAddress}}/weatherforecast/
+### AUTH SERVICE THROUGH GATEWAY
+
+### Login
+POST {{GatewayService_HostAddress}}/gateway/auth/login
+Content-Type: application/json
+
+{
+  "email": "sagarrajput1810@gmail.com",
+  "password": "12345678"
+}
+
+### JOB SERVICE THROUGH GATEWAY
+
+### Get All Jobs
+GET {{GatewayService_HostAddress}}/gateway/job
 Accept: application/json
 
-###
+### SEARCH SERVICE THROUGH GATEWAY
+
+### Search Jobs
+GET {{GatewayService_HostAddress}}/gateway/search?query=software
+Accept: application/json
+
+### PROFILE SERVICE THROUGH GATEWAY
+
+### Get Candidate Profile By User ID
+GET {{GatewayService_HostAddress}}/gateway/candidate/user/00000000-0000-0000-0000-000000000000
+Accept: application/json
+
+### APPLICATION SERVICE THROUGH GATEWAY
+
+### Get My Applications
+GET {{GatewayService_HostAddress}}/gateway/application/my-applications
+Authorization: Bearer {{token}}
+Accept: application/json
+
+### NOTIFICATION SERVICE THROUGH GATEWAY
+
+### Get Unread Count
+GET {{GatewayService_HostAddress}}/gateway/notification/unread-count
+Authorization: Bearer {{token}}
+Accept: application/json
+
+### FILE UPLOADS THROUGH GATEWAY
+
+### Get Uploaded File
+GET {{GatewayService_HostAddress}}/gateway/uploads/resumes/resume.pdf

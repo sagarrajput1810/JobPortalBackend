@@ -1,4 +1,5 @@
 using JobPortal.ProfileService.Data;
+using JobPortal.ProfileService.Consumers;
 using MassTransit;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
@@ -6,9 +7,13 @@ using Microsoft.IdentityModel.Tokens;
 using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
-var allowedOrigins = builder.Configuration["AllowedOrigins"];
-var jwtKey = builder.Configuration["Jwt:Key"] 
-    ?? throw new InvalidOperationException("Jwt:Key configuration is missing.");
+var allowedOrigins = (builder.Configuration["AllowedOrigins"] ?? "http://localhost:4200")
+    .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+var jwtKey = builder.Configuration["Jwt:Key"];
+if (string.IsNullOrWhiteSpace(jwtKey))
+{
+    throw new InvalidOperationException("Jwt:Key configuration is missing.");
+}
 
 // Add services to the container.
 builder.Services.AddDbContext<ProfileDbContext>(options =>
@@ -23,22 +28,16 @@ builder.Services.AddCors(options =>
     options.AddPolicy("AllowAngular",
         policy =>
         {
-            if (string.IsNullOrWhiteSpace(allowedOrigins) || allowedOrigins == "*")
-            {
-                policy.AllowAnyOrigin();
-            }
-            else
-            {
-                policy.WithOrigins(allowedOrigins.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries));
-            }
-
-            policy.AllowAnyHeader()
+            policy.WithOrigins(allowedOrigins)
+                .AllowAnyHeader()
                 .AllowAnyMethod();
         });
 });
 
 builder.Services.AddMassTransit(x =>
 {
+    x.AddConsumer<UserRegisteredConsumer>();
+
     if (builder.Environment.IsDevelopment())
     {
         x.UsingRabbitMq((context, cfg) =>
@@ -103,4 +102,4 @@ app.UseAuthorization();
 
 app.MapControllers();
 
-app.Run();
+await app.RunAsync();

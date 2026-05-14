@@ -1,6 +1,54 @@
-@JobPortal.ApplicationService_HostAddress = http://localhost:5243
+@ApplicationService_HostAddress = http://localhost:5243
+@token = your_token_here
 
-GET {{JobPortal.ApplicationService_HostAddress}}/weatherforecast/
+### Apply for Job
+POST {{ApplicationService_HostAddress}}/api/application/apply
+Authorization: Bearer {{token}}
+Content-Type: multipart/form-data; boundary=WebAppBoundary
+
+--WebAppBoundary
+Content-Disposition: form-data; name="jobId"
+
+1
+--WebAppBoundary
+Content-Disposition: form-data; name="jobTitle"
+
+Software Engineer
+--WebAppBoundary
+Content-Disposition: form-data; name="companyName"
+
+Tech Corp
+--WebAppBoundary
+Content-Disposition: form-data; name="resume"; filename="resume.pdf"
+Content-Type: application/pdf
+
+< ./path/to/resume.pdf
+--WebAppBoundary--
+
+### Get Applications By Job
+GET {{ApplicationService_HostAddress}}/api/application/job/1
 Accept: application/json
 
-###
+### Get My Applications
+GET {{ApplicationService_HostAddress}}/api/application/my-applications
+Authorization: Bearer {{token}}
+Accept: application/json
+
+### Update Application Status
+PUT {{ApplicationService_HostAddress}}/api/application/1/status
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "status": "Shortlisted"
+}
+
+### Update AI Score (Internal/System)
+POST {{ApplicationService_HostAddress}}/api/aicallback/update-score
+Content-Type: application/json
+
+{
+  "applicationId": 1,
+  "atsScore": 85,
+  "aiSummary": "Highly qualified candidate with strong C# skills."
+}

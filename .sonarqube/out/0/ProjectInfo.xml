@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <ProjectInfo xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns="http://www.sonarsource.com/msbuild/integration/2015/1">
-  <ProjectName>JobPortal.JobService</ProjectName>
+  <ProjectName>JobPortal.GatewayService</ProjectName>
   <ProjectLanguage>C#</ProjectLanguage>
   <ProjectType>Product</ProjectType>
-  <ProjectGuid>3bfe7e56-9502-6376-d4e8-d017e4456152</ProjectGuid>
-  <FullPath>C:\Users\asus\Documents\JobPortal\JobPortalBackend\JobPortal.JobService\JobPortal.JobService.csproj</FullPath>
+  <ProjectGuid>7236abb1-8103-0203-cf58-3e44fd1c8576</ProjectGuid>
+  <FullPath>C:\Users\asus\Documents\JobPortal\JobPortalBackend\JobPortal.GatewayService\JobPortal.GatewayService.csproj</FullPath>
   <IsExcluded>false</IsExcluded>
   <AnalysisResultFiles>
     <AnalysisResultFile Id="FilesToAnalyze" Location="C:\Users\asus\Documents\JobPortal\JobPortalBackend\.sonarqube\conf\0\FilesToAnalyze.txt" />

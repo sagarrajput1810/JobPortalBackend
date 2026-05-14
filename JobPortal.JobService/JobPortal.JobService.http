@@ -1,6 +1,48 @@
-@JobPortal.JobService_HostAddress = http://localhost:5284
+@JobService_HostAddress = http://localhost:5284
+@token = your_token_here
 
-GET {{JobPortal.JobService_HostAddress}}/weatherforecast/
+### Get All Jobs
+GET {{JobService_HostAddress}}/api/job
 Accept: application/json
 
-###
+### Get Job By ID
+GET {{JobService_HostAddress}}/api/job/1
+Accept: application/json
+
+### Create Job (Recruiter Only)
+POST {{JobService_HostAddress}}/api/job
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "title": "Software Engineer",
+  "description": "Looking for a C# expert",
+  "company": "Tech Corp",
+  "location": "Remote",
+  "salaryRange": "$100k - $150k",
+  "jobType": "Full-time",
+  "experienceLevel": "Mid-Senior"
+}
+
+### Update Job (Recruiter Only)
+PUT {{JobService_HostAddress}}/api/job/1
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "title": "Senior Software Engineer",
+  "description": "Looking for a C# and Azure expert",
+  "company": "Tech Corp",
+  "location": "Remote",
+  "salaryRange": "$120k - $170k",
+  "jobType": "Full-time",
+  "experienceLevel": "Senior"
+}
+
+### Delete Job (Recruiter Only)
+DELETE {{JobService_HostAddress}}/api/job/1
+Authorization: Bearer {{token}}
+
+### Get Jobs By Recruiter
+GET {{JobService_HostAddress}}/api/job/recruiter/recruiter_id_here
+Accept: application/json

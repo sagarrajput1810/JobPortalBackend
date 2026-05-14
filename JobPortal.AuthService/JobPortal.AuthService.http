@@ -1,6 +1,53 @@
-@JobPortal.AuthService_HostAddress = http://localhost:5063
+@AuthService_HostAddress = http://localhost:5063
+@token = your_token_here
 
-GET {{JobPortal.AuthService_HostAddress}}/weatherforecast/
-Accept: application/json
+### Get Current User
+GET {{AuthService_HostAddress}}/api/auth/me
+Authorization: Bearer {{token}}
 
-###
+### Register Candidate
+POST {{AuthService_HostAddress}}/api/auth/register/candidate
+Content-Type: application/json
+
+{
+  "email": "candidate@example.com",
+  "password": "Password123!",
+  "fullName": "John Doe"
+}
+
+### Register Recruiter
+POST {{AuthService_HostAddress}}/api/auth/register/recruiter
+Content-Type: application/json
+
+{
+  "email": "recruiter@example.com",
+  "password": "Password123!",
+  "fullName": "Jane Smith"
+}
+
+### Verify Email
+POST {{AuthService_HostAddress}}/api/auth/verify-email
+Content-Type: application/json
+
+{
+  "email": "candidate@example.com",
+  "otp": "123456"
+}
+
+### Login
+POST {{AuthService_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "candidate@example.com",
+  "password": "Password123!"
+}
+
+### Google Login
+POST {{AuthService_HostAddress}}/api/auth/google-login
+Content-Type: application/json
+
+{
+  "idToken": "google-id-token",
+  "role": "Candidate"
+}

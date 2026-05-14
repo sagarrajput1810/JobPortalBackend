@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <ProjectInfo xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns="http://www.sonarsource.com/msbuild/integration/2015/1">
-  <ProjectName>JobPortal.IntegrationTests</ProjectName>
+  <ProjectName>JobPortal.AIResumeParserService</ProjectName>
   <ProjectLanguage>C#</ProjectLanguage>
-  <ProjectType>Test</ProjectType>
-  <ProjectGuid>d83171f1-5dca-4aee-97a5-f9a0f3b96848</ProjectGuid>
-  <FullPath>C:\Users\asus\Documents\JobPortal\JobPortalBackend\JobPortal.IntegrationTests\JobPortal.IntegrationTests.csproj</FullPath>
+  <ProjectType>Product</ProjectType>
+  <ProjectGuid>35554778-839a-6ad1-73ce-2eca5b4d2ca7</ProjectGuid>
+  <FullPath>C:\Users\asus\Documents\JobPortal\JobPortalBackend\JobPortal.AIResumeParserService\JobPortal.AIResumeParserService.csproj</FullPath>
   <IsExcluded>false</IsExcluded>
   <AnalysisResultFiles>
     <AnalysisResultFile Id="FilesToAnalyze" Location="C:\Users\asus\Documents\JobPortal\JobPortalBackend\.sonarqube\conf\1\FilesToAnalyze.txt" />

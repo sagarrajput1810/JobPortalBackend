@@ -8,9 +8,20 @@ using System.Text;
 using Microsoft.Extensions.FileProviders;
 
 var builder = WebApplication.CreateBuilder(args);
-var allowedOrigins = builder.Configuration["AllowedOrigins"];
-var jwtKey = builder.Configuration["Jwt:Key"] 
-    ?? throw new InvalidOperationException("Jwt:Key configuration is missing.");
+
+// Configure Kestrel to allow up to 50MB for file uploads
+builder.WebHost.ConfigureKestrel(options =>
+{
+    options.Limits.MaxRequestBodySize = 52428800; // 50 MB
+});
+
+var allowedOrigins = (builder.Configuration["AllowedOrigins"] ?? "http://localhost:4200")
+    .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+var jwtKey = builder.Configuration["Jwt:Key"];
+if (string.IsNullOrWhiteSpace(jwtKey))
+{
+    throw new InvalidOperationException("Jwt:Key configuration is missing.");
+}
 
 // Add services to the container.
 builder.Services.AddControllers();
@@ -21,16 +32,8 @@ builder.Services.AddCors(options =>
     options.AddPolicy("AllowAngular",
         policy =>
         {
-            if (string.IsNullOrWhiteSpace(allowedOrigins) || allowedOrigins == "*")
-            {
-                policy.AllowAnyOrigin();
-            }
-            else
-            {
-                policy.WithOrigins(allowedOrigins.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries));
-            }
-
-            policy.AllowAnyHeader()
+            policy.WithOrigins(allowedOrigins)
+                .AllowAnyHeader()
                 .AllowAnyMethod();
         });
 });
@@ -47,9 +50,24 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 
 // Services
 builder.Services.AddScoped<IApplicationService, ApplicationService>();
-// Register LocalFileService
-builder.Services.AddScoped<IFileService>(provider => 
-    new LocalFileService(builder.Environment.ContentRootPath));
+
+// Register File Service based on configuration
+var azureStorageConnString = builder.Configuration["AzureStorage:ConnectionString"];
+if (!string.IsNullOrWhiteSpace(azureStorageConnString))
+{
+    builder.Services.AddScoped<IFileService, AzureBlobStorageService>();
+    Console.WriteLine("[ApplicationService] Using AzureBlobStorageService for file uploads.");
+}
+else
+{
+    builder.Services.AddScoped<IFileService>(sp => 
+    {
+        var env = sp.GetRequiredService<IWebHostEnvironment>();
+        var logger = sp.GetRequiredService<ILogger<LocalFileService>>();
+        return new LocalFileService(env.ContentRootPath, logger);
+    });
+    Console.WriteLine("[ApplicationService] Using LocalFileService for file uploads because AzureStorage:ConnectionString is missing.");
+}
 
 builder.Services.AddMassTransit(x =>
 {
@@ -109,7 +127,7 @@ using (var scope = app.Services.CreateScope())
     try
     {
         var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-        dbContext.Database.Migrate();
+        await dbContext.Database.MigrateAsync();
         logger.LogInformation("Application database migrations applied.");
     }
     catch (Exception ex)
@@ -126,25 +144,44 @@ if (app.Environment.IsDevelopment())
 
 app.UseCors("AllowAngular");
 
-// Enable Static Files so uploads can be accessed via URL
-app.UseStaticFiles(); // For wwwroot
-
-// Ensure the uploads folder is served even if not in wwwroot (optional but safer)
+// Ensure the resumes folder exists inside wwwroot/uploads
 var uploadsPath = Path.Combine(builder.Environment.ContentRootPath, "wwwroot", "uploads");
-if (!Directory.Exists(uploadsPath))
+var resumesPath = Path.Combine(uploadsPath, "resumes");
+if (!Directory.Exists(resumesPath))
 {
-    Directory.CreateDirectory(uploadsPath);
+    Directory.CreateDirectory(resumesPath);
 }
 
+// Enable Static Files so uploads can be accessed via URL
+app.UseStaticFiles(); // Default for wwwroot
+
+// Explicitly map /uploads to physical path to be 100% sure
 app.UseStaticFiles(new StaticFileOptions
 {
     FileProvider = new PhysicalFileProvider(uploadsPath),
-    RequestPath = "/uploads"
+    RequestPath = "/uploads",
+    OnPrepareResponse = ctx =>
+    {
+        // Allow CORS for direct file access
+        ctx.Context.Response.Headers.Append("Access-Control-Allow-Origin", "*");
+        ctx.Context.Response.Headers.Append("Access-Control-Allow-Methods", "GET, OPTIONS");
+        ctx.Context.Response.Headers.Append("Access-Control-Allow-Headers", "*");
+        
+        // Ensure browser treats it as a PDF and allows inline viewing
+        if (ctx.File.Name.EndsWith(".pdf", StringComparison.OrdinalIgnoreCase))
+        {
+            ctx.Context.Response.Headers.ContentType = "application/pdf";
+            ctx.Context.Response.Headers.ContentDisposition = "inline";
+        }
+    }
 });
 
-// app.UseHttpsRedirection();
+Console.WriteLine($"[ApplicationService] Static files configured. Serving /uploads from: {uploadsPath}");
+Console.WriteLine($"[ApplicationService] WebRootPath: {app.Environment.WebRootPath ?? "NULL"}");
+Console.WriteLine($"[ApplicationService] ContentRootPath: {app.Environment.ContentRootPath}");
+
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
 
-app.Run();
+await app.RunAsync();

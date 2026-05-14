@@ -10,14 +10,14 @@ namespace JobPortal.AIResumeParserService.Consumers
     public class JobAppliedConsumer : IConsumer<JobAppliedEvent>
     {
         private readonly IGeminiService _geminiService;
-        private readonly HttpClient _httpClient;
+        private readonly IHttpClientFactory _httpClientFactory;
         private readonly ILogger<JobAppliedConsumer> _logger;
         private readonly IConfiguration _configuration;
 
-        public JobAppliedConsumer(IGeminiService geminiService, HttpClient httpClient, ILogger<JobAppliedConsumer> logger, IConfiguration configuration)
+        public JobAppliedConsumer(IGeminiService geminiService, IHttpClientFactory httpClientFactory, ILogger<JobAppliedConsumer> logger, IConfiguration configuration)
         {
             _geminiService = geminiService;
-            _httpClient = httpClient;
+            _httpClientFactory = httpClientFactory;
             _logger = logger;
             _configuration = configuration;
         }
@@ -25,7 +25,7 @@ namespace JobPortal.AIResumeParserService.Consumers
         public async Task Consume(ConsumeContext<JobAppliedEvent> context)
         {
             var msg = context.Message;
-            _logger.LogInformation($"AI Service: Analyzing Resume for AppId: {msg.ApplicationId}, Resume: {msg.ResumeUrl}");
+            _logger.LogInformation("AI Service: Analyzing Resume for AppId: {ApplicationId}, Resume: {ResumeUrl}", msg.ApplicationId, msg.ResumeUrl);
 
             try 
             {
@@ -34,38 +34,60 @@ namespace JobPortal.AIResumeParserService.Consumers
 
                 // 2. Call Gemini for Analysis
                 var analysis = await _geminiService.AnalyzeResumeAsync(msg.ResumeUrl, jobDescription);
-                _logger.LogInformation($"AI Service: Analysis complete for AppId: {msg.ApplicationId}. Score: {analysis.Score}");
+                _logger.LogInformation("AI Service: Analysis complete for AppId: {ApplicationId}. Score: {Score}", msg.ApplicationId, analysis.Score);
 
                 // 3. Callback to ApplicationService to update score
                 var updateRequest = new
                 {
-                    ApplicationId = msg.ApplicationId,
-                    AtsScore = analysis.Score,
-                    AiSummary = analysis.Summary
+                    applicationId = msg.ApplicationId,
+                    atsScore = analysis.Score,
+                    aiSummary = analysis.Summary
                 };
 
                 var options = new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
                 var json = JsonSerializer.Serialize(updateRequest, options);
                 var content = new StringContent(json, Encoding.UTF8, "application/json");
 
-                var appServiceUrl = _configuration["ServiceUrls:ApplicationService"] ?? "http://localhost:5243";
-                _logger.LogInformation($"AI Service: Sending callback to {appServiceUrl}/api/aicallback/update-score");
+                var appServiceUrl = _configuration["ServiceUrls:ApplicationService"]
+                    ?? throw new InvalidOperationException("ServiceUrls:ApplicationService is missing in configuration.");
                 
-                var response = await _httpClient.PostAsync($"{appServiceUrl}/api/aicallback/update-score", content);
-
-                if (response.IsSuccessStatusCode)
+                // In Azure Container Apps, internal ingress enforces HTTPS. 
+                // A POST request to an HTTP URL will receive a 301/308 redirect, 
+                // but HttpClient drops the POST body on redirect and fails.
+                if (appServiceUrl.StartsWith("http://") && !appServiceUrl.Contains("localhost"))
                 {
-                    _logger.LogInformation($"AI Service: Successfully updated score for AppId: {msg.ApplicationId}");
+                    appServiceUrl = appServiceUrl.Replace("http://", "https://");
                 }
-                else
+                
+                // Ensure base URL doesn't have double slashes when combined
+                var baseUrl = appServiceUrl.TrimEnd('/');
+                var callbackUrl = $"{baseUrl}/api/AiCallback/update-score";
+                
+                _logger.LogInformation("AI Service: Sending callback to {CallbackUrl} with payload: {Payload}", callbackUrl, json);
+                
+                try 
                 {
-                    var errorBody = await response.Content.ReadAsStringAsync();
-                    _logger.LogError($"AI Service: Failed to update ApplicationService. Status: {response.StatusCode}, Error: {errorBody}");
+                    var httpClient = _httpClientFactory.CreateClient();
+                    var response = await httpClient.PostAsync(callbackUrl, content);
+
+                    if (response.IsSuccessStatusCode)
+                    {
+                        _logger.LogInformation("AI Service: Successfully updated score for AppId: {ApplicationId}", msg.ApplicationId);
+                    }
+                    else
+                    {
+                        var errorBody = await response.Content.ReadAsStringAsync();
+                        _logger.LogError("AI Service: Failed to update ApplicationService. Status: {StatusCode}, Error: {ErrorBody}, URL: {CallbackUrl}", response.StatusCode, errorBody, callbackUrl);
+                    }
+                }
+                catch (HttpRequestException ex)
+                {
+                    _logger.LogError(ex, "AI Service: Network error while calling ApplicationService at {CallbackUrl}. Is the URL correct and reachable?", callbackUrl);
                 }
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, $"AI Service: Critical error processing AppId: {msg.ApplicationId}");
+                _logger.LogError(ex, "AI Service: Critical error processing AppId: {ApplicationId}", msg.ApplicationId);
             }
         }
     }

@@ -1,13 +1,16 @@
 using System.ComponentModel.DataAnnotations;
+using System.Text.Json.Serialization;
 
 namespace JobPortal.ProfileService.Models;
 
 public class CandidateProfile
 {
     [Key]
+    [JsonRequired]
     public Guid Id {get; set;}
 
     [Required]
+    [JsonRequired]
     public Guid UserId {get; set;}
 
     [Required(ErrorMessage ="Full Name is required")]

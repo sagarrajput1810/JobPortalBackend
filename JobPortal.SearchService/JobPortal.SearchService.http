@@ -1,6 +1,38 @@
-@JobPortal.SearchService_HostAddress = http://localhost:5252
+@SearchService_HostAddress = http://localhost:5252
 
-GET {{JobPortal.SearchService_HostAddress}}/weatherforecast/
+### Search Jobs
+GET {{SearchService_HostAddress}}/api/search?query=software
 Accept: application/json
 
-###
+### Index Job
+POST {{SearchService_HostAddress}}/api/search/index
+Content-Type: application/json
+
+{
+  "id": 1,
+  "title": "Software Engineer",
+  "description": "C# Developer needed",
+  "company": "Tech Corp",
+  "location": "Remote",
+  "salaryRange": "$100k - $150k",
+  "jobType": "Full-time",
+  "experienceLevel": "Mid"
+}
+
+### Update Job Index
+PUT {{SearchService_HostAddress}}/api/search/update
+Content-Type: application/json
+
+{
+  "id": 1,
+  "title": "Senior Software Engineer",
+  "description": "Senior C# Developer needed",
+  "company": "Tech Corp",
+  "location": "Remote",
+  "salaryRange": "$120k - $170k",
+  "jobType": "Full-time",
+  "experienceLevel": "Senior"
+}
+
+### Delete Job From Index
+DELETE {{SearchService_HostAddress}}/api/search/1
