@@ -9,5 +9,7 @@ namespace JobPortal.ApplicationService.Services
         Task<IEnumerable<JobApplicationResponseDto>> GetApplicationsByCandidateIdAsync(string candidateId);
         Task<bool> UpdateApplicationStatusAsync(int id, string status);
         Task<JobApplicationResponseDto?> GetApplicationByIdAsync(int id);
+        Task<IEnumerable<JobApplicationResponseDto>> GetAllApplicationsAsync();
+        Task<bool> DeleteApplicationAsync(int id);
     }
 }

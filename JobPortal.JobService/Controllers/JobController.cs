@@ -32,7 +32,7 @@ namespace JobPortal.JobService.Controllers
             return Ok(job);
         }
 
-        [Authorize(Roles = "Recruiter")]
+        [Authorize(Roles = "Recruiter,Admin")]
         [HttpPost]
         public async Task<ActionResult<JobResponseDto>> CreateJob(JobCreateDto jobCreateDto)
         {
@@ -43,31 +43,40 @@ namespace JobPortal.JobService.Controllers
             return CreatedAtAction(nameof(GetJobById), new { id = createdJob.Id }, createdJob);
         }
 
-        [Authorize(Roles = "Recruiter")]
+        [Authorize(Roles = "Recruiter,Admin")]
         [HttpPut("{id}")]
         public async Task<IActionResult> UpdateJob(int id, JobUpdateDto jobUpdateDto)
         {
-            // Optional: Check if the recruiter owns the job
             var job = await _jobService.GetJobByIdAsync(id);
             if (job == null) return NotFound();
-            
-            var recruiterId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            if (job.RecruiterId != recruiterId) return Forbid();
+
+            // Admin can update any job; recruiter can only update their own
+            var isAdmin = User.IsInRole("Admin");
+            if (!isAdmin)
+            {
+                var recruiterId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                if (job.RecruiterId != recruiterId) return Forbid();
+            }
 
             var result = await _jobService.UpdateJobAsync(id, jobUpdateDto);
             if (!result) return NotFound();
             return NoContent();
         }
 
-        [Authorize(Roles = "Recruiter")]
+        [Authorize(Roles = "Recruiter,Admin")]
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteJob(int id)
         {
             var job = await _jobService.GetJobByIdAsync(id);
             if (job == null) return NotFound();
 
-            var recruiterId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            if (job.RecruiterId != recruiterId) return Forbid();
+            // Admin can delete any job; recruiter can only delete their own
+            var isAdmin = User.IsInRole("Admin");
+            if (!isAdmin)
+            {
+                var recruiterId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                if (job.RecruiterId != recruiterId) return Forbid();
+            }
 
             var result = await _jobService.DeleteJobAsync(id);
             if (!result) return NotFound();

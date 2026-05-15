@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using JobPortal.AuthService.Data;
 using JobPortal.AuthService.Services;
+using JobPortal.AuthService.Models;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
@@ -70,6 +71,7 @@ builder.Services.AddCors(options =>
 });
 
 builder.Services.AddScoped<IAuthServices,AuthServices>();
+builder.Services.AddScoped<IAdminService, AdminService>();
 builder.Services.AddControllers();
 builder.Services.AddSwaggerGen();
 builder.Services.AddAuthorization();
@@ -134,6 +136,28 @@ using (var scope = app.Services.CreateScope())
         if (context.Database.GetPendingMigrations().Any())
         {
             context.Database.Migrate();
+        }
+
+        // Seed default Admin account from configuration
+        var adminEmail = builder.Configuration["DefaultAdmin:Email"] ?? "admin@jobportal.com";
+        var adminPassword = builder.Configuration["DefaultAdmin:Password"] ?? "Admin@123";
+        var adminFullName = builder.Configuration["DefaultAdmin:FullName"] ?? "Super Admin";
+
+        var adminExists = await context.UserCredentials.AnyAsync(u => u.Email == adminEmail);
+        if (!adminExists)
+        {
+            context.UserCredentials.Add(new UserCredential
+            {
+                Id = Guid.NewGuid(),
+                FullName = adminFullName,
+                Email = adminEmail,
+                PasswordHash = BCrypt.Net.BCrypt.HashPassword(adminPassword),
+                Role = "Admin",
+                IsEmailVerified = true,
+                CreatedAt = DateTime.UtcNow
+            });
+            await context.SaveChangesAsync();
+            Console.WriteLine($"[Seed] Default admin account created: {adminEmail}");
         }
     }
     catch (Exception ex)

@@ -11,6 +11,11 @@ Jwt__Key=<strong-32-plus-character-signing-key>
 Jwt__Issuer=JobPortalApp
 Jwt__Audience=JobPortalUsers
 AllowedOrigins=<frontend-origin-or-*>
+
+# Admin Configuration (AuthService Only)
+DefaultAdmin__Email=<your-admin-email>
+DefaultAdmin__Password=<your-admin-password>
+DefaultAdmin__FullName=<your-admin-name>
 ```
 
 ## Service-Specific Values

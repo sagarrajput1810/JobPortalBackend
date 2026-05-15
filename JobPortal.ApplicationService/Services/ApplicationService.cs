@@ -109,6 +109,23 @@ namespace JobPortal.ApplicationService.Services
             return application != null ? MapToDto(application) : null;
         }
 
+        public async Task<IEnumerable<JobApplicationResponseDto>> GetAllApplicationsAsync()
+        {
+            var apps = await _context.JobApplications
+                .OrderByDescending(a => a.AppliedDate)
+                .ToListAsync();
+            return apps.Select(MapToDto);
+        }
+
+        public async Task<bool> DeleteApplicationAsync(int id)
+        {
+            var application = await _context.JobApplications.FindAsync(id);
+            if (application == null) return false;
+            _context.JobApplications.Remove(application);
+            await _context.SaveChangesAsync();
+            return true;
+        }
+
         private JobApplicationResponseDto MapToDto(JobApplication application)
         {
             return new JobApplicationResponseDto

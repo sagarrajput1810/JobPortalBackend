@@ -184,6 +184,25 @@
         "AllowAutoRedirect": true,
         "DangerousAcceptAnyServerCertificateValidator": true
       }
+    },
+    {
+      "DownstreamPathTemplate": "/api/Admin/{everything}",
+      "DownstreamScheme": "https",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "auth-service.internal.victorioussmoke-d03cd650.centralindia.azurecontainerapps.io",
+          "Port": 443
+        }
+      ],
+      "UpstreamPathTemplate": "/gateway/admin/{everything}",
+      "UpstreamHttpMethod": [ "Get", "Post", "Put", "Delete" ],
+      "HttpHandlerOptions": {
+        "AllowAutoRedirect": true,
+        "DangerousAcceptAnyServerCertificateValidator": true
+      },
+      "QoSOptions": {
+        "TimeoutValue": 60000
+      }
     }
   ],
   "GlobalConfiguration": {

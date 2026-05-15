@@ -73,6 +73,7 @@ namespace JobPortal.ApplicationService.Controllers
         }
 
         [HttpGet("job/{jobId}")]
+        [Authorize(Roles = "Recruiter,Admin")]
         public async Task<IActionResult> GetApplicationsByJob(int jobId)
         {
             try
@@ -107,11 +108,37 @@ namespace JobPortal.ApplicationService.Controllers
         }
 
         [HttpPut("{id}/status")]
-        [Authorize]
+        [Authorize(Roles = "Recruiter,Admin")]
         public async Task<IActionResult> UpdateStatus(int id, [FromBody] JobApplicationStatusUpdateDto statusDto)
         {
             var success = await _applicationService.UpdateApplicationStatusAsync(id, statusDto.Status);
             return success ? NoContent() : NotFound();
+        }
+
+        // Admin-only: Get ALL applications across all jobs
+        [HttpGet("all")]
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> GetAllApplications()
+        {
+            try
+            {
+                var all = await _applicationService.GetAllApplicationsAsync();
+                return Ok(all);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Admin failed to load all applications");
+                return Ok(Array.Empty<JobApplicationResponseDto>());
+            }
+        }
+
+        // Admin-only: Delete any application
+        [HttpDelete("{id}")]
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> DeleteApplication(int id)
+        {
+            var success = await _applicationService.DeleteApplicationAsync(id);
+            return success ? Ok("Application deleted.") : NotFound();
         }
     }
 }
