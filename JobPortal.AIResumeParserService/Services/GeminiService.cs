@@ -13,6 +13,7 @@ namespace JobPortal.AIResumeParserService.Services
     {
         private readonly IHttpClientFactory _httpClientFactory;
         private readonly string _apiKey;
+        private readonly string _model;
         private readonly ILogger<GeminiService> _logger;
         private readonly IConfiguration _configuration;
 
@@ -22,18 +23,13 @@ namespace JobPortal.AIResumeParserService.Services
             _logger = logger;
             _configuration = configuration;
             _apiKey = configuration["Gemini:ApiKey"] ?? throw new InvalidOperationException("Gemini API Key is missing in configuration.");
+            _model = configuration["Gemini:Model"] ?? "gemini-2.0-flash"; // Default to a newer model
         }
 
         public async Task<(int Score, string Summary)> AnalyzeResumeAsync(string resumeUrl, string jobDescription)
         {
             try
             {
-                if (string.IsNullOrWhiteSpace(_apiKey))
-                {
-                    _logger.LogWarning("Gemini API Key is empty. Using mock data.");
-                    return GetMockData();
-                }
-
                 // Note: In real world, you'd download the resume from resumeUrl and extract text.
                 // For now, we assume the resumeUrl IS the text or we use a mock.
                 string resumeText = await ExtractTextFromPdfAsync(resumeUrl);
@@ -61,19 +57,56 @@ namespace JobPortal.AIResumeParserService.Services
                 var jsonBody = JsonConvert.SerializeObject(requestBody);
                 var content = new StringContent(jsonBody, Encoding.UTF8, "application/json");
 
-                // Google Gemini API Endpoint
-                var httpClient = _httpClientFactory.CreateClient();
-                using var response = await httpClient.PostAsync($"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={_apiKey}", content);
+                _logger.LogInformation("Attempting Gemini API call. Payload length: {Length}", jsonBody.Length);
+
+                // List of models to try as fallbacks
+                var modelsToTry = new List<string> { _model, "gemini-2.5-flash", "gemini-flash-latest", "gemini-2.0-flash", "gemini-1.5-pro", "gemini-1.5-flash" }.Distinct().ToList();
                 
-                if (!response.IsSuccessStatusCode)
+                var httpClient = _httpClientFactory.CreateClient("GeminiClient");
+                HttpResponseMessage response = null;
+                string lastError = "";
+
+                foreach (var m in modelsToTry)
                 {
-                    var error = await response.Content.ReadAsStringAsync();
-                    _logger.LogError("Gemini API call failed. Status: {StatusCode}, Error: {Error}", response.StatusCode, error);
-                    return GetMockData();
+                    _logger.LogInformation("Trying Gemini model: {Model}", m);
+                    // Always use v1beta for better compatibility across multiple models
+                    var apiUrl = $"https://generativelanguage.googleapis.com/v1beta/models/{m}:generateContent?key={_apiKey}";
+                    
+                    response = await httpClient.PostAsync(apiUrl, content);
+                    
+                    if (response.IsSuccessStatusCode)
+                    {
+                        _logger.LogInformation("Successfully connected using model: {Model}", m);
+                        break; // Success! Stop trying other models.
+                    }
+                    
+                    lastError = await response.Content.ReadAsStringAsync();
+                    _logger.LogWarning("Model {Model} failed with Status: {StatusCode}. Moving to next...", m, response.StatusCode);
+                }
+
+                if (response == null || !response.IsSuccessStatusCode)
+                {
+                    var statusCode = response?.StatusCode ?? System.Net.HttpStatusCode.InternalServerError;
+                    _logger.LogError("All Gemini models failed. Last Status: {StatusCode}, Error: {Error}", statusCode, lastError);
+                        
+                    if (statusCode == System.Net.HttpStatusCode.TooManyRequests)
+                    {
+                        return (0, "AI Analysis is currently busy (All models exhausted their Free Quota). Please wait a minute and try again.");
+                    }
+
+                    return (0, $"AI Analysis failed: All Gemini models failed. Last Status: {statusCode}. Details: {lastError}");
                 }
 
                 var resultJson = await response.Content.ReadAsStringAsync();
+                _logger.LogInformation("Gemini API Response received successfully.");
                 dynamic result = JsonConvert.DeserializeObject(resultJson)!;
+                
+                if (result.candidates == null || result.candidates.Count == 0)
+                {
+                    _logger.LogWarning("Gemini returned no candidates. Response: {Response}", resultJson);
+                    return (0, "AI Analysis failed: Gemini did not generate any response content.");
+                }
+
                 string textResponse = result.candidates[0].content.parts[0].text;
                 
                 // Extract JSON from markdown if Gemini wraps it in ```json ... ```
@@ -91,14 +124,9 @@ namespace JobPortal.AIResumeParserService.Services
             }
             catch (Exception ex) 
             { 
-                _logger.LogError(ex, "Error calling Gemini API. Falling back to mock data."); 
-                return GetMockData();
+                _logger.LogError(ex, "Error calling Gemini API."); 
+                return (0, "AI Analysis failed: A critical error occurred during processing.");
             }
-        }
-
-        private (int Score, string Summary) GetMockData()
-        {
-            return (Random.Shared.Next(65, 98), "AI Summary (Mock): Candidate has strong matching skills in .NET, React, and Microservices architecture.");
         }
 
         private async Task<string> ExtractTextFromPdfAsync(string resumeUrl)
@@ -107,7 +135,7 @@ namespace JobPortal.AIResumeParserService.Services
             {
                 if (string.IsNullOrWhiteSpace(resumeUrl)) return string.Empty;
 
-                var httpClient = _httpClientFactory.CreateClient();
+                var httpClient = _httpClientFactory.CreateClient("GeminiClient");
                 
                 // If the URL is relative, prepend the ApplicationService base URL
                 if (resumeUrl.StartsWith("/"))

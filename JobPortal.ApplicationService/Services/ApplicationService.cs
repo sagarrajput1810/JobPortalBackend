@@ -12,7 +12,7 @@ namespace JobPortal.ApplicationService.Services
         private readonly ApplicationDbContext _context;
         private readonly ISendEndpointProvider _sendEndpointProvider;
         private readonly ILogger<ApplicationService> _logger;
-        private static readonly TimeSpan EventSendTimeout = TimeSpan.FromSeconds(5);
+        private static readonly TimeSpan EventSendTimeout = TimeSpan.FromSeconds(30);
 
         public ApplicationService(
             ApplicationDbContext context,
@@ -62,8 +62,9 @@ namespace JobPortal.ApplicationService.Services
                 application.CompanyName
             );
 
-            await TrySendEventAsync(new Uri("queue:job-applied-event-notification"), appEvent);
+            // Swap order: Try AI first, then Notification
             await TrySendEventAsync(new Uri("queue:job-applied-event-ai"), appEvent);
+            await TrySendEventAsync(new Uri("queue:job-applied-event-notification"), appEvent);
 
             return MapToDto(application);
         }
@@ -132,8 +133,8 @@ namespace JobPortal.ApplicationService.Services
         {
             try
             {
-                var endpoint = await _sendEndpointProvider.GetSendEndpoint(endpointUri).WaitAsync(EventSendTimeout);
-                await endpoint.Send(message).WaitAsync(EventSendTimeout);
+                var endpoint = await _sendEndpointProvider.GetSendEndpoint(endpointUri);
+                await endpoint.Send(message);
                 _logger.LogInformation("Successfully sent event of type {MessageType} to {Endpoint}", typeof(T).Name, endpointUri);
             }
             catch (Exception ex)

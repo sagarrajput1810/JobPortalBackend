@@ -85,13 +85,16 @@ builder.Services.AddMassTransit(x =>
     }
     else
     {
-        var connString = builder.Configuration["ServiceBus:ConnectionString"];
+        var connString = (builder.Configuration["ServiceBus:ConnectionString"] ?? "").Trim().TrimEnd('/');
         Console.WriteLine($"[ApplicationService] Configuring Azure Service Bus. Connection String configured: {!string.IsNullOrWhiteSpace(connString)}");
 
         x.UsingAzureServiceBus((context, cfg) =>
         {
             cfg.Host(connString);
+            
+            // For Basic Tier: Disable topic creation
             cfg.DeployPublishTopology = false;
+            
             cfg.ConfigureEndpoints(context);
         });
     }

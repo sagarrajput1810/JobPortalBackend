@@ -23,10 +23,11 @@ builder.Services.AddCors(options =>
 });
 
 // Register HttpClient for API Calls and ignore internal SSL errors (for ACA networking)
-builder.Services.AddHttpClient().ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler
-{
-    ServerCertificateCustomValidationCallback = (message, cert, chain, errors) => true
-});
+builder.Services.AddHttpClient("GeminiClient")
+    .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler
+    {
+        ServerCertificateCustomValidationCallback = (message, cert, chain, errors) => true
+    });
 
 // Register Gemini Service
 builder.Services.AddScoped<IGeminiService, GeminiService>();
@@ -53,16 +54,16 @@ builder.Services.AddMassTransit(x =>
     }
     else
     {
-        var connString = builder.Configuration["ServiceBus:ConnectionString"];
+        var connString = (builder.Configuration["ServiceBus:ConnectionString"] ?? "").Trim().TrimEnd('/');
         Console.WriteLine($"[AIResumeParserService] Configuring Azure Service Bus. Connection String configured: {!string.IsNullOrWhiteSpace(connString)}");
 
         x.UsingAzureServiceBus((context, cfg) =>
         {
             cfg.Host(connString);
 
-            // Azure Service Bus Basic tier does not support topics/subscriptions.
+            // For Basic Tier: Disable topic creation
             cfg.DeployPublishTopology = false;
-            
+
             cfg.ReceiveEndpoint("job-applied-event-ai", e =>
             {
                 e.ConfigureConsumeTopology = false;

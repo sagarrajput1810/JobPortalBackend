@@ -51,12 +51,10 @@ namespace JobPortal.AIResumeParserService.Consumers
                 var appServiceUrl = _configuration["ServiceUrls:ApplicationService"]
                     ?? throw new InvalidOperationException("ServiceUrls:ApplicationService is missing in configuration.");
                 
-                // In Azure Container Apps, internal ingress enforces HTTPS. 
-                // A POST request to an HTTP URL will receive a 301/308 redirect, 
-                // but HttpClient drops the POST body on redirect and fails.
-                if (appServiceUrl.StartsWith("http://") && !appServiceUrl.Contains("localhost"))
+                // Ensure internal communication uses HTTP (ACA internal ingress is usually HTTP)
+                if (appServiceUrl.StartsWith("https://") && !appServiceUrl.Contains("localhost"))
                 {
-                    appServiceUrl = appServiceUrl.Replace("http://", "https://");
+                    appServiceUrl = appServiceUrl.Replace("https://", "http://");
                 }
                 
                 // Ensure base URL doesn't have double slashes when combined
@@ -67,7 +65,8 @@ namespace JobPortal.AIResumeParserService.Consumers
                 
                 try 
                 {
-                    var httpClient = _httpClientFactory.CreateClient();
+                    // Use the named "GeminiClient" which has SSL bypass to talk to internal application-service
+                    var httpClient = _httpClientFactory.CreateClient("GeminiClient");
                     var response = await httpClient.PostAsync(callbackUrl, content);
 
                     if (response.IsSuccessStatusCode)
