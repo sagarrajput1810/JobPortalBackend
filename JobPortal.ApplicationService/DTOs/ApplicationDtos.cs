@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using Microsoft.AspNetCore.Http;
 
 namespace JobPortal.ApplicationService.DTOs
 {
@@ -10,6 +11,17 @@ namespace JobPortal.ApplicationService.DTOs
         public string CompanyName { get; set; } = string.Empty;
         public string ResumeUrl { get; set; } = string.Empty;
         public string? CoverLetter { get; set; }
+    }
+
+    public class JobApplicationRequestDto
+    {
+        [Required]
+        public int JobId { get; set; }
+        public string? JobTitle { get; set; }
+        public string? CompanyName { get; set; }
+        public string? CoverLetter { get; set; }
+        [Required]
+        public IFormFile Resume { get; set; } = null!;
     }
 
     public class JobApplicationResponseDto

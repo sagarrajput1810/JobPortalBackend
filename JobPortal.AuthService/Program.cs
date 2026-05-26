@@ -73,7 +73,11 @@ builder.Services.AddCors(options =>
 builder.Services.AddScoped<IAuthServices,AuthServices>();
 builder.Services.AddScoped<IAdminService, AdminService>();
 builder.Services.AddControllers();
+
+// Configure Swagger/OpenAPI
+builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+
 builder.Services.AddAuthorization();
 // ... (rest of the configuration)
 
@@ -168,11 +172,12 @@ using (var scope = app.Services.CreateScope())
 }
 
 // Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
+app.UseSwagger();
+app.UseSwaggerUI(c =>
 {
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
+    c.SwaggerEndpoint("/swagger/v1/swagger.json", "JobPortal Auth API V1");
+    c.RoutePrefix = "swagger"; // Standard prefix
+});
 
 app.UseCors("AllowAngular");
 

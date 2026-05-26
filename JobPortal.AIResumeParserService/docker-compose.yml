@@ -6,6 +6,7 @@ services:
       - "5241:8080"
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
+      - Gemini__ApiKey=AIzaSyCct8Uk9vh5qgCZzxfyLOooLzpYlVPzdZ4
       - RabbitMq__Host=host.docker.internal
       - ServiceBus__ConnectionString=YOUR_SERVICE_BUS_CONNECTION_STRING
       - ServiceUrls__ApplicationService=http://host.docker.internal:5243

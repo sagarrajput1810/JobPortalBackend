@@ -85,31 +85,42 @@ public class AuthServices : IAuthServices
 
     public async Task<bool> RegisterAsync(RegisterRequest request, string role)
     {
-        Console.WriteLine($"[AuthService] Received RegisterRequest: Email={request.Email}, FullName={request.FullName}, Role={role}");
-        
+        if (string.IsNullOrWhiteSpace(request.Email)) throw new ArgumentException("Email is required.");
+        if (string.IsNullOrWhiteSpace(request.Password)) throw new ArgumentException("Password is required.");
+
+        _logger.LogInformation("[AuthService] Attempting to register user: {Email}, Role: {Role}", request.Email, role);
+
         var existingUser = await _context.UserCredentials.FirstOrDefaultAsync(u => u.Email.ToLower() == request.Email.ToLower());
-        
+
         if (existingUser != null)
         {
             if (existingUser.IsEmailVerified)
             {
+                _logger.LogWarning("[AuthService] Registration failed: Email {Email} already registered and verified.", request.Email);
                 throw new Exception("Email is already registered. Please login.");
             }
             else
             {
+                _logger.LogInformation("[AuthService] Email {Email} exists but not verified. Re-sending OTP.", request.Email);
                 // If user exists but NOT verified, update their info and send new OTP
                 existingUser.PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password);
                 existingUser.FullName = request.FullName;
                 existingUser.Role = role;
                 existingUser.VerificationOtp = new Random().Next(100000, 999999).ToString();
                 existingUser.OtpExpiry = DateTime.UtcNow.AddMinutes(15);
-                
+
                 await _context.SaveChangesAsync();
-                
-                Console.WriteLine($"[AuthService] Data saved for existing user: {existingUser.Email}. Sending OTP...");
-                
-                await SendOtpEventAsync(existingUser.Id, existingUser.Email, existingUser.FullName, existingUser.Role, existingUser.VerificationOtp);
-                
+
+                try 
+                {
+                    await SendOtpEventAsync(existingUser.Id, existingUser.Email, existingUser.FullName, existingUser.Role, existingUser.VerificationOtp);
+                }
+                catch (Exception ex)
+                {
+                     _logger.LogError(ex, "[AuthService] Failed to send OTP for existing unverified user {Email}", existingUser.Email);
+                     throw new Exception($"Email already registered but not verified. Also failed to send new OTP: {ex.Message}");
+                }
+
                 throw new Exception("Email is already registered but not verified. A new OTP has been sent to your email.");
             }
         }
@@ -130,14 +141,22 @@ public class AuthServices : IAuthServices
 
         _context.UserCredentials.Add(newUser);
         await _context.SaveChangesAsync();
-        
-        Console.WriteLine($"[AuthService] New user saved: {newUser.Email}. Sending OTP...");
 
-        await SendOtpEventAsync(newUser.Id, newUser.Email, newUser.FullName, newUser.Role, otp);
+        _logger.LogInformation("[AuthService] New user saved: {Email}. Sending OTP event...", newUser.Email);
+
+        try
+        {
+            await SendOtpEventAsync(newUser.Id, newUser.Email, newUser.FullName, newUser.Role, otp);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "[AuthService] Failed to send OTP event for new user {Email}", newUser.Email);
+            // We don't rollback the user creation here to allow manual verification or re-registration attempt
+            throw new Exception($"Registration saved, but OTP could not be sent: {ex.Message}. Please try verifying later.");
+        }
 
         return true;
     }
-
     private async Task SendOtpEventAsync(Guid userId, string email, string fullName, string role, string otp)
     {
         var endpointUri = new Uri("queue:user-registered-event");

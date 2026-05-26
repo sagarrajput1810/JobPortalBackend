@@ -61,7 +61,7 @@ namespace JobPortal.AIResumeParserService.Services
 
                 // List of models to try as fallbacks
                 var modelsToTry = new List<string> { _model, "gemini-2.5-flash", "gemini-flash-latest", "gemini-2.0-flash", "gemini-1.5-pro", "gemini-1.5-flash" }.Distinct().ToList();
-                
+                    
                 var httpClient = _httpClientFactory.CreateClient("GeminiClient");
                 HttpResponseMessage response = null;
                 string lastError = "";

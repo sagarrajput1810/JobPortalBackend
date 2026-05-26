@@ -32,12 +32,7 @@ namespace JobPortal.ApplicationService.Controllers
         [RequestSizeLimit(MaxResumeUploadSizeBytes)]
         [RequestFormLimits(MultipartBodyLengthLimit = MaxResumeUploadSizeBytes)]
         [SuppressMessage("Security", "S5693:Make sure the content length limit is safe here", Justification = "Resume uploads are limited to 25 MB to allow PDF/DOC resumes while preventing oversized multipart requests.")]
-        public async Task<IActionResult> Apply(
-            [FromForm] int jobId,
-            [FromForm] string? jobTitle,
-            [FromForm] string? companyName,
-            [FromForm] string? coverLetter,
-            [FromForm] IFormFile resume)
+        public async Task<IActionResult> Apply([FromForm] JobApplicationRequestDto request)
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             var userName = User.FindFirstValue(ClaimTypes.Name);
@@ -47,18 +42,18 @@ namespace JobPortal.ApplicationService.Controllers
             
             try
             {
-                if (resume == null) return BadRequest("Resume file is required");
+                if (request.Resume == null) return BadRequest("Resume file is required");
 
                 // 1. Save File to Local Storage
-                string resumeUrl = await _fileService.SaveFileAsync(resume, "resumes");
+                string resumeUrl = await _fileService.SaveFileAsync(request.Resume, "resumes");
 
                 // 2. Map to DTO for Service
                 var applicationDto = new JobApplicationCreateDto
                 {
-                    JobId = jobId,
-                    JobTitle = jobTitle ?? string.Empty,
-                    CompanyName = companyName ?? string.Empty,
-                    CoverLetter = coverLetter,
+                    JobId = request.JobId,
+                    JobTitle = request.JobTitle ?? string.Empty,
+                    CompanyName = request.CompanyName ?? string.Empty,
+                    CoverLetter = request.CoverLetter,
                     ResumeUrl = resumeUrl // Relative URL saved in DB
                 };
 
@@ -67,7 +62,7 @@ namespace JobPortal.ApplicationService.Controllers
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Failed to apply for job {JobId} as user {UserId}", jobId, userId);
+                _logger.LogError(ex, "Failed to apply for job {JobId} as user {UserId}", request.JobId, userId);
                 return BadRequest(ex.Message);
             }
         }
